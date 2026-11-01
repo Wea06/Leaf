@@ -36,8 +36,37 @@ jobs:
             exit 1
           fi
 
+      - name: 数据库不能用破坏性迁移，必须导出 schema
+        run: |
+          if grep -rn "fallbackToDestructiveMigration" app/src; then
+            echo "::error::出现了 fallbackToDestructiveMigration，升级时会清空用户数据，Leaf 禁止使用"
+            exit 1
+          fi
+          if grep -rnE "exportSchema\s*=\s*false" app/src; then
+            echo "::error::exportSchema 必须是 true"
+            exit 1
+          fi
+
       - name: 编译 debug APK 并跑单元测试
         run: ./gradlew assembleDebug testDebugUnitTest --stacktrace
+
+      - name: 数据库 schema 文件必须已提交且是最新的
+        run: |
+          if ! grep -rqE "@Database\b|@Database\(" app/src/main; then
+            echo "还没有 Room 数据库，跳过"
+            exit 0
+          fi
+          if ! find app/schemas -name '*.json' 2>/dev/null | grep -q .; then
+            echo "::error::有 Room 数据库，但 app/schemas/ 里没有 schema JSON。请确认 exportSchema = true 并把 app/schemas/ 提交进仓库"
+            exit 1
+          fi
+          changes=$(git status --porcelain -- app/schemas)
+          if [ -n "$changes" ]; then
+            echo "$changes"
+            git diff -- app/schemas | head -100
+            echo "::error::编译后生成的数据库 schema 和仓库里提交的不一样。改了表就要提交新的 schema 文件（开始自用后还必须升版本并写 Migration）"
+            exit 1
+          fi
 
       - name: 合并后的 Manifest 也不能有联网权限
         run: |
