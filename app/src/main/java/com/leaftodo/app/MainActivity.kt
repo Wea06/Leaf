@@ -1,6 +1,10 @@
 package com.leaftodo.app
 
 import android.os.Bundle
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.leaftodo.app.data.formatDate
+import java.time.LocalDate
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -16,6 +20,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -38,6 +43,10 @@ class MainActivity : ComponentActivity() {
 @Composable
 private fun LeafApp() {
     var selected by rememberSaveable { mutableIntStateOf(0) }
+    val model: TaskListViewModel = viewModel()
+    val tasks by model.tasks.collectAsStateWithLifecycle()
+    var adding by rememberSaveable { mutableStateOf(false) }
+    if (adding) AddTaskDialog(onDismiss = { adding = false }, onAdd = model::add)
     val pages = listOf("今天", "清单", "日历")
     Column(
         Modifier.fillMaxSize().background(bg).windowInsetsPadding(WindowInsets.safeDrawing)
@@ -45,13 +54,17 @@ private fun LeafApp() {
         Box(Modifier.weight(1f).fillMaxWidth()) {
             Column(Modifier.padding(horizontal = 34.dp, vertical = 32.dp)) {
                 Text(pages[selected], style = MaterialTheme.typography.headlineLarge)
+                if (selected == 1) {
+                    Spacer(Modifier.height(20.dp))
+                    TaskList(tasks, model)
+                }
                 if (selected == 0) {
                     Spacer(Modifier.height(20.dp))
-                    Text("11月1日 周日 · Leaf 测试 0123456789", style = MaterialTheme.typography.bodyLarge)
+                    Text(LocalDate.now().let { formatDate(it, it) }, style = MaterialTheme.typography.bodyLarge)
                 }
             }
             FloatingActionButton(
-                onClick = {},
+                onClick = { if (selected == 1) adding = true },
                 modifier = Modifier.align(Alignment.BottomEnd).padding(end = 42.dp, bottom = 42.dp)
                     .size(56.dp).semantics { contentDescription = "新建一条事" },
                 shape = CircleShape,
@@ -68,6 +81,7 @@ private fun LeafApp() {
             pages.forEachIndexed { index, label ->
                 Box(
                     Modifier.weight(1f).heightIn(min = 48.dp)
+                        .clip(RoundedCornerShape(16.dp))
                         .background(if (selected == index) clayTint else Color.Transparent, RoundedCornerShape(16.dp))
                         .selectable(selected == index, role = Role.Tab, onClick = { selected = index })
                         .padding(horizontal = 8.dp, vertical = 12.dp),
@@ -80,4 +94,5 @@ private fun LeafApp() {
         }
     }
 }
+
 
