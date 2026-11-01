@@ -1,0 +1,50 @@
+# 每个 PR 自动编译 + 跑单元测试，结果在 PR 页面显示为绿勾/红叉。
+# 只检查，不发布、不签名，用不到任何密钥。
+name: PR 检查
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: 编译和单元测试
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: 不能有联网权限
+        run: |
+          if grep -rn "android.permission.INTERNET" app/src/main/AndroidManifest.xml; then
+            echo "::error::AndroidManifest.xml 里出现了 INTERNET 权限，Leaf 永远不联网"
+            exit 1
+          fi
+
+      - name: 编译 debug APK 并跑单元测试
+        run: ./gradlew assembleDebug testDebugUnitTest --stacktrace
+
+      - name: 合并后的 Manifest 也不能有联网权限
+        run: |
+          f=$(find app/build/intermediates -path '*debug*' -name AndroidManifest.xml | grep -i merged | head -1)
+          echo "检查 $f"
+          test -n "$f"
+          if grep -n "android.permission.INTERNET" "$f"; then
+            echo "::error::某个依赖库带进了 INTERNET 权限"
+            exit 1
+          fi
