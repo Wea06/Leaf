@@ -1,0 +1,2 @@
+# Room 数据库结构文件：统一用 LF 换行，避免 Windows 和 CI 对比时因换行符不同误报
+app/schemas/**/*.json text eol=lf
