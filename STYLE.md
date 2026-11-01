@@ -88,8 +88,9 @@
 | 全部中文 | **霞鹜文楷 LXGW WenKai**（简体版，开源 OFL） | 标题、正文、按钮一律用文楷 |
 | 时间、数字列 | Newsreader + 等宽数字（`fontFeatureSettings = "tnum"`） | |
 
-- 字重：正文 Regular 400，标题 SemiBold 600（文楷用 Bold）。
-- Compose：一个 `FontFamily` 里同时放 Newsreader 和文楷两套字体文件，Newsreader 在前，中文字符自动回退到文楷。
+- 字重：正文 Regular 400，标题 SemiBold 600（文楷用 Medium，它没有 Bold）。
+- Compose：**不能**只把两套字体放进一个 `FontFamily`。Compose 只会按字重挑其中一个文件，缺字时直接掉到系统字体，不会逐字回退到文楷。
+  做法（M1 已实现，见 `ui/theme/Type.kt`）：用 `android.graphics.Typeface.CustomFallbackBuilder`（API 29+，所以 minSdk 29），Newsreader 为主、文楷为 fallback，分别建“正文”（Regular + Regular）和“标题”（SemiBold + Medium）两个 Typeface，再用 `FontFamily(typeface)` 包给 Compose。
 - 体积（用户定的目标）：文楷**打包常用字 3500 字起、最多 5000 字**（以《通用规范汉字表》一级字 3500 为底，再补常用二级字），连同常用标点和全角符号一起做成子集字体放进 App；不在子集里的字自动回退系统字体。具体怎么裁剪到时候再做。
 - 字号（sp）：大标题 26 / 标题 20 / 正文 16 / 次要 13。行高 1.5 倍。
 
