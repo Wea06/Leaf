@@ -20,6 +20,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -80,6 +81,7 @@ private fun LeafApp() {
             pages.forEachIndexed { index, label ->
                 Box(
                     Modifier.weight(1f).heightIn(min = 48.dp)
+                        .clip(RoundedCornerShape(16.dp))
                         .background(if (selected == index) clayTint else Color.Transparent, RoundedCornerShape(16.dp))
                         .selectable(selected == index, role = Role.Tab, onClick = { selected = index })
                         .padding(horizontal = 8.dp, vertical = 12.dp),

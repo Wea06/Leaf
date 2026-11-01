@@ -12,6 +12,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.text.input.ImeAction
@@ -38,10 +39,11 @@ private fun TaskCard(task: Task, model: TaskListViewModel) {
     var menu by remember { mutableStateOf(false) }
     Box {
         Row(Modifier.fillMaxWidth().heightIn(min = 60.dp)
-            .background(card, RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(16.dp)).background(card)
             .combinedClickable(onClick = {}, onLongClick = { menu = true })
             .padding(horizontal = 18.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
             Box(Modifier.size(22.dp)
+                .clip(RoundedCornerShape(4.dp))
                 .background(if (task.status == TaskStatus.DONE) clay else card, RoundedCornerShape(4.dp))
                 .border(2.dp, ink, RoundedCornerShape(4.dp))
                 .clickable(onClickLabel = "完成或撤回") { model.toggleDone(task) }, contentAlignment = Alignment.Center) {
