@@ -1,6 +1,6 @@
 # Leaf
 
-自用的纯本地 Android 待办 App，目前完成 M2 Room 数据层与清单最小可用版；M1 已真机验收，M2 待真机验收。
+自用的纯本地 Android 待办 App，目前完成 M2 Room 数据层与清单最小可用版；M1、M2 均已真机验收通过。
 
 ## 本地运行
 
@@ -46,7 +46,7 @@ minSdk 29，包名 com.leaftodo.app。
 仪器测试：手机开启 USB 调试、连接电脑并允许调试后运行：
 ` .\gradlew.bat connectedDebugAndroidTest `。
 TaskDaoTest 有 3 项测试：无日期筛选、状态持久化、日期时间往返。
-本次测试 APK 编译通过，但执行受阻：`com.android.builder.testing.api.DeviceException: No connected devices!`。
+已在荣耀 Magic6（BVL-AN00，Android 16）上运行，3 项仪器测试全部通过（0 失败、0 跳过）；M2 手动验收也已通过。
 
 手机验收：
 1. Android Studio 选择 app 与手机，点击 Run 安装。
