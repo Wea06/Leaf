@@ -4,6 +4,8 @@ import android.app.Activity
 import android.content.*
 import android.net.Uri
 import android.provider.Settings
+import android.os.Build
+import com.leaftodo.app.data.autoStartGuide
 
 private fun Context.tryOpen(intent: Intent): Boolean = try {
     startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)); true
@@ -23,9 +25,9 @@ fun openBatterySettings(context: Context) {
     if (context.tryOpen(Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, Uri.parse("package:${context.packageName}")))) return
     if (!context.tryOpen(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))) openAppDetails(context)
 }
-fun openHonorStartup(context: Context) {
-    for (pkg in listOf("com.hihonor.systemmanager", "com.huawei.systemmanager")) {
-        if (context.tryOpen(Intent().setComponent(ComponentName(pkg, "$pkg.startupmgr.ui.StartupNormalAppListActivity")))) return
+fun openAutoStartSettings(context: Context) {
+    for ((pkg, className) in autoStartGuide(Build.MANUFACTURER, Build.BRAND).targets) {
+        if (context.tryOpen(Intent().setComponent(ComponentName(pkg, className)))) return
     }
     openAppDetails(context)
 }

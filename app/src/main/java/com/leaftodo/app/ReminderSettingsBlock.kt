@@ -63,7 +63,7 @@ internal fun ReminderSettingsBlock() {
         next = nextReminder(withContext(Dispatchers.IO) { LeafDatabase.get(context).taskDao().getReminderCandidates() }, now, zone)
     }
     Text("到点提醒", Modifier.padding(top = 12.dp), style = MaterialTheme.typography.titleMedium, color = ink)
-    Text("给一条事选了时间，到那一分钟手机会弹通知。荣耀手机会自动清理后台，下面几项都要打开，提醒才靠得住。", style = MaterialTheme.typography.bodyMedium, color = soft)
+    Text("给一条事选了时间，到那一分钟手机会弹通知。很多手机会自动清理后台，下面几项都要打开，提醒才靠得住。", style = MaterialTheme.typography.bodyMedium, color = soft)
     val upcoming = next
     Text(if (upcoming == null) "现在没有要提醒的事" else
         "下一次提醒：${reminderText(upcoming.tasks.first(), today)} ${upcoming.tasks.first().title}" +
@@ -76,7 +76,8 @@ internal fun ReminderSettingsBlock() {
             descriptionColor = if (exact) soft else clayText) { openExactAlarmSettings(context) }
         SettingsButton("后台运行不受限制", if (battery) "已允许" else "没允许，点这里打开", true,
             descriptionColor = if (battery) soft else clayText) { openBatterySettings(context) }
-        SettingsButton("荣耀：应用启动管理", "Leaf 检查不到这一项，请自己确认一次：找到 Leaf → 关掉“自动管理” → 打开 允许自启动、允许关联启动、允许后台活动", true) { openHonorStartup(context) }
+        val guide = remember { autoStartGuide(Build.MANUFACTURER, Build.BRAND) }
+        SettingsButton("自启动和后台活动（${guide.vendor}）", "Leaf 检查不到这一项，请自己确认一次：${guide.steps}", true) { openAutoStartSettings(context) }
         SettingsButton("更准时", "打开后用闹钟的方式登记，最不容易被推迟；有待提醒的事时，状态栏会显示一个小闹钟图标", true,
             trailing = {
                 Switch(checked = precise, onCheckedChange = null, colors = SwitchDefaults.colors(
