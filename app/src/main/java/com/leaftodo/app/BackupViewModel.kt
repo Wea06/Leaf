@@ -1,6 +1,7 @@
 package com.leaftodo.app
 
 import android.app.Application
+import com.leaftodo.app.reminder.Reminders
 import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -88,6 +89,7 @@ class BackupViewModel(application: Application) : AndroidViewModel(application) 
             }
             try {
                 db.replaceAllTasks(backup.tasks)
+                Reminders.requestSync(getApplication())
                 state.value = BackupUi.Message("已导入 ${backup.tasks.size} 条事。" +
                     (saved?.let { "原来的 ${current.size} 条另存在手机的“下载/Leaf/$it”，需要时可以再导入回来。" } ?: ""))
             } catch (e: Exception) {

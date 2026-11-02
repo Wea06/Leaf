@@ -1,6 +1,6 @@
 # Leaf
 
-自用的纯本地 Android 待办 App，目前完成 M6 导出 / 导入备份；M1～M6 均已真机验收通过。
+自用的纯本地 Android 待办 App，目前完成 M7 到点提醒；M1～M7 均已真机验收通过。
 
 ## 本地运行
 
@@ -10,7 +10,7 @@
 4. 连接已开启 USB 调试的手机，选择 app 和手机设备，点击 Run。
 
 构建与测试：` .\gradlew.bat assembleDebug testDebugUnitTest `。
-当前共 81 项 JUnit4 单元测试，全部通过；保留 M2～M5 的 42 项，M6 新增 39 项。
+当前共 127 项 JUnit4 单元测试，全部通过；保留 M2～M6 的 81 项，M7 新增提醒逻辑 30 项、自启动引导 16 项。
 
 构建版本沿用 Hello 测试工程：Gradle 9.6.0、AGP 9.5.0、
 Kotlin 2.2.10、Compose BOM 2026.02.01，compileSdk / targetSdk 37。
@@ -46,7 +46,7 @@ minSdk 29，包名 com.leaftodo.app。
 仪器测试：手机开启 USB 调试、连接电脑并允许调试后运行：
 ` .\gradlew.bat connectedDebugAndroidTest `。
 TaskDaoTest 有 3 项测试：无日期筛选、状态持久化、日期时间往返。
-已在荣耀 Magic6（BVL-AN00，Android 16）上运行，3 项仪器测试全部通过（0 失败、0 跳过）；M2 手动验收也已通过。
+已在连接手机（BVL-AN00，Android 16）上运行，3 项仪器测试全部通过（0 失败、0 跳过）；M2 手动验收也已通过。
 
 手机验收：
 1. Android Studio 选择 app 与手机，点击 Run 安装。
@@ -77,7 +77,7 @@ M2 不包含编辑、日期时间选择、删除、今天列表、折叠、创�
 验证结果（2026-11-02）：
 
 - `.\gradlew.bat assembleDebug testDebugUnitTest` 通过：15 项单元测试，0 失败、0 跳过。
-- `.\gradlew.bat connectedDebugAndroidTest` 通过：荣耀 Magic6（BVL-AN00，Android 16）7 项仪器测试，0 失败、0 跳过。
+- `.\gradlew.bat connectedDebugAndroidTest` 通过：连接手机（BVL-AN00，Android 16）7 项仪器测试，0 失败、0 跳过。
 - 仪器测试包含原有 3 项及新增的按日期筛选、清单迁移到当天、只改标题保留日期时间、删除 4 项。
 - 真机查看了新建时键盘、清单默认空日期、禁用时间、日期 / 时间选择器配色与 09:00 初始值、取消时的确认框。
 - 用户于 2026-11-02 确认手机验收通过。
@@ -112,7 +112,7 @@ M2 不包含编辑、日期时间选择、删除、今天列表、折叠、创�
 验证结果（2026-11-02）：
 
 - `.\gradlew.bat assembleDebug testDebugUnitTest` 通过：23 项单元测试，0 失败、0 跳过。
-- `.\gradlew.bat connectedDebugAndroidTest` 通过：荣耀 Magic6（BVL-AN00，Android 16）9 项仪器测试，0 失败、0 跳过。
+- `.\gradlew.bat connectedDebugAndroidTest` 通过：连接手机（BVL-AN00，Android 16）9 项仪器测试，0 失败、0 跳过。
 - M4 新增单元测试覆盖范围两端、跨月 / 跨年、日期 / 状态筛选、组与组内排序、完成撤回、时区创建日期和尾部空白比较；保留既有排序回归测试。
 - 仪器测试保留既有 7 项，新增范围查询边界 / 状态过滤、完成与撤回后重新查询 2 项。
 - 已运行 `installDebug` 将 M4 调试版安装到手机。
@@ -144,7 +144,7 @@ M2 不包含编辑、日期时间选择、删除、今天列表、折叠、创�
 验证结果（2026-11-02）：
 
 - `.\gradlew.bat assembleDebug testDebugUnitTest` 通过：42 项单元测试，0 失败、0 跳过（原有 23 项 + 日历 19 项）。
-- `.\gradlew.bat connectedDebugAndroidTest` 通过：荣耀 Magic6（BVL-AN00，Android 16），10 项仪器测试，0 失败、0 跳过（原有 9 项 + 全状态月份范围查询 1 项）。
+- `.\gradlew.bat connectedDebugAndroidTest` 通过：连接手机（BVL-AN00，Android 16），10 项仪器测试，0 失败、0 跳过（原有 9 项 + 全状态月份范围查询 1 项）。
 - 日历测试覆盖网格连续性、闰年、跨年翻月、6 种标记、7 天边界、状态变化、月份过滤、默认选中日、标题灰色判定及事项排序。
 - `installDebug` 已将 M5 调试版覆盖安装到手机。
 - 后续新增年月选择并重新构建、运行 42 项单元测试通过，已覆盖安装。真机检查了选择框布局、跳转到 2027年12月并选中 1 号、改选后取消保持原月、选择本月回到今天。
@@ -184,7 +184,7 @@ M2 不包含编辑、日期时间选择、删除、今天列表、折叠、创�
 验证结果（2026-11-02）：
 
 - `.\gradlew.bat assembleDebug testDebugUnitTest` 通过：81 项单元测试，0 失败、0 跳过（原有 42 项 + 备份逻辑 39 项）。
-- `.\gradlew.bat connectedDebugAndroidTest` 通过：荣耀 Magic6（BVL-AN00），16 项仪器测试，0 失败、0 跳过（原有 10 项 + DAO 4 项 + 系统 JSON 2 项）。
+- `.\gradlew.bat connectedDebugAndroidTest` 通过：连接手机（BVL-AN00），16 项仪器测试，0 失败、0 跳过（原有 10 项 + DAO 4 项 + 系统 JSON 2 项）。
 - DAO 新增覆盖保留编号 / 自增、空覆盖、按编号查询 / 计数及冲突回滚测试；设备 JSON 测试覆盖六种记录、毫秒、特殊字符与真正的 null。
 - 最终已执行 `installDebug` 重新安装，并在手机打开设置页检查布局、字体、配色。
 
@@ -200,3 +200,62 @@ M2 不包含编辑、日期时间选择、删除、今天列表、折叠、创�
 8. 确认操作过程没有权限申请；在确认框和提示框打开时转屏，状态应保留，导入完成后三页自动刷新。
 
 用户于 2026-11-02 确认完成手机验证，M6 验收通过。未生成签名 keystore、未改签名配置、未做合并导入、定时备份及 M7～M9 功能。
+
+## M7 到点提醒
+
+状态：实现完成，用户于 2026-11-02 确认手机验收通过。分支 `m7-reminder`，仅本地提交，未 push。
+
+- 仅 OPEN 且有日期、有时间的事项在选定分钟第 0 秒提醒；只向系统登记最早的一个闹钟，同一分钟多条分别通知。
+- 通知含日期时间、详细内容和“完成”按钮，点通知打开今天页，保留尚未关闭的编辑页 / 设置页。
+- 写库、恢复前台、开机、升级、改系统时间 / 时区、精确闹钟权限变化后重新登记；被推迟或关机错过的最多补 24 小时。
+- 默认精确闹钟；没有权限降级到非精确；“更准时”使用系统闹钟方式登记。SharedPreferences 内部状态不进入备份。
+- 设置页在备份上增加通知、精确闹钟、电池、自启动和后台活动、下一次提醒、“更准时”和测试通知。编辑页选时间时申请通知权限，并显示通知关闭或时间已过提示。
+- 各牌子手机均需允许通知和精确闹钟、取消电池优化；“自启动和后台活动”按手机牌子给步骤和入口，未知牌子或跳转失败时打开应用信息。提醒逻辑只用标准 Android API，详见 SPEC 7.2。
+- 无新增依赖、工程版本或备份格式变化，Room 仍为版本 1，schema 的 `1.json` 与 main 一致。local.properties 和 gradle/gradle-daemon-jvm.properties 保留且未提交。
+
+自动验证（2026-11-02）：
+
+- `.\gradlew.bat assembleDebug testDebugUnitTest`：127 项单元测试通过，0 失败、0 跳过；其中提醒逻辑 30 项覆盖时区、分钟归零、状态筛选、调度边界、延迟补发、24 小时边界、通知保留、日期文字及下一次提醒分组；自启动引导 16 项覆盖各牌子、大小写、单独品牌匹配、包含匹配、优先级、跳转顺序和通用后备步骤。
+- `.\gradlew.bat connectedDebugAndroidTest`：17 项通过，0 失败、0 跳过；保留 16 项，新增 DAO 提醒候选筛选 1 项。未增加可选的 ReminderDeviceTest，真实闹钟行为按下方手动验收。
+- `.\gradlew.bat installDebug`：已重新覆盖安装到 BVL-AN00。
+- 当前连接手机通过 adb 实际报告 Android 17 / API 37，与任务背景的 Android 16 / API 36 不同；API 29～36 的分支尚未在相应设备运行。
+- 合并 Manifest 的 uses-permission 只有以下五项，没有依赖库额外权限，没有 INTERNET：
+
+```xml
+<uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+<uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+<uses-permission
+    android:name="android.permission.SCHEDULE_EXACT_ALARM"
+    android:maxSdkVersion="32" />
+<uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+<uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+```
+
+生产代码写库后同步检查：
+
+| 位置 | 同步方式 |
+|---|---|
+| TaskListViewModel.save 新建 insert / 编辑 update | 写入后 requestSync；未修改时不写、不重登 |
+| TaskListViewModel.delete | delete 后 requestSync |
+| TaskListViewModel.change | update 后 requestSync，涵盖完成 / 划掉 / 撤回 |
+| BackupViewModel.confirmImport | replaceAllTasks 事务成功后 requestSync；事务内 deleteAll / insertAll 不分别同步 |
+| Reminders.markDone | update 后在同一 Mutex 内 syncLocked，并取消该条通知 |
+
+手机验收（请先解锁；已安装本次调试版）：
+
+1. 打开设置，确认“到点提醒”位于“备份”上面，所有文字可滚动查看，无紫蓝色；“备份”的导出导入功能仍正常。
+2. 新建一条，日期选今天、时间选 2～3 分钟后。第一次点时间“确定”时拒绝系统通知申请，确认时间仍保留，下面显示“通知没打开，到点不会弹出提醒”；点提示打开系统通知设置，允许后返回，提示消失。也可在设置的“通知”一行允许。
+3. 设置页逐项打开通知、闹钟和提醒、电池优化豁免；按“自启动和后台活动”显示的步骤手动设置。返回 Leaf 后前三项状态应更新，自启动项仍说明需自己确认；不同牌子显示各自的步骤，未知牌子或跳转失败时应打开应用信息。
+4. 点“发一条测试通知”，确认标题和正文；点测试通知进入今天页。单独关闭系统“到点提醒”渠道，返回设置应显示通知没打开，再恢复。
+5. 新建两条同为 2～3 分钟后的事项，其中一条填写多行详细内容。确认“下一次提醒”显示时间、第一条标题和“等 2 条”；锁屏放着，到点应有两条通知，展开后能读详细内容。
+6. 通知上点“完成”，回 Leaf 检查该条已完成；另一条在 App 中打勾，确认它的通知自动消失。再测试划掉、删除、去掉时间、改成将来时间，已弹通知都应收掉。
+7. 新建一条未来提醒，改到更晚：原时间不弹，新时间弹。分别检查完成、划掉、删除后不弹；在时间尚未来到时撤回成待办，又会提醒。只改标题 / 内容，日期时间保持不变。
+8. 选过去时间，确认编辑页显示“这个时间已经过了，不会再提醒”，保存后不补弹。没有时间的事项不提醒。
+9. 保留一条未来提醒，打开“更准时”，确认状态栏有小闹钟；关闭应消失。没有未来提醒时不应有 Leaf 的小闹钟。
+10. 在清单 / 日历页、编辑页有未保存文字、设置页分别点通知：底下标签切到今天，编辑内容 / 设置页保留，关闭后看到今天。
+11. 新建未来提醒，从最近任务划掉 Leaf，锁屏等待应照样弹；再设一条后重启，解锁后等待应弹。另设一条后关机，错过时间再开机解锁，应补弹；超过 24 小时的不补。可再检查改系统时间 / 时区后的下一次提醒是否正确，并将系统恢复自动时间 / 时区。
+12. 导出含未来提醒的备份，改动事项后导入，确认下一次提醒恢复并到点弹出；备份不会改“更准时”开关。
+
+用户于 2026-11-02 确认 M7 手机验收通过。其它品牌手机的设置跳转及长期后台可靠性仍需对应设备验证。本次未做每晚回顾、纸面效果、手绘动效等 M8 / M9 内容。
+
+补充修改：自启动步骤支持荣耀/华为、小米/红米/POCO、OPPO/一加/realme、vivo/iQOO，其它牌子显示通用步骤。只在纯函数 autoStartGuide 内判断牌子。此次修改已包含在用户确认通过的 M7 手机验收中。

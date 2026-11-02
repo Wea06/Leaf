@@ -1,5 +1,14 @@
 package com.leaftodo.app
 
+import android.Manifest
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import com.leaftodo.app.reminder.*
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -33,6 +42,20 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun EditTaskScreen(id: Long?, defaultDate: String?, today: LocalDate, model: TaskListViewModel, onClose: () -> Unit) {
+    val context = LocalContext.current
+    val owner = LocalLifecycleOwner.current
+    var notifications by remember { mutableStateOf(canNotify(context)) }
+    var now by remember { mutableStateOf(Instant.now()) }
+    val permission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
+        notifications = canNotify(context)
+    }
+    DisposableEffect(owner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) { notifications = canNotify(context); now = Instant.now() }
+        }
+        owner.lifecycle.addObserver(observer)
+        onDispose { owner.lifecycle.removeObserver(observer) }
+    }
     var initialized by rememberSaveable { mutableStateOf(false) }
     var title by rememberSaveable { mutableStateOf("") }
     var note by rememberSaveable { mutableStateOf("") }
@@ -98,9 +121,19 @@ fun EditTaskScreen(id: Long?, defaultDate: String?, today: LocalDate, model: Tas
         EditField(note, { note = it }, "详细内容（选填）", Modifier.focusRequester(noteFocus), singleLine = false)
         PickerRow("日期", date?.let { formatDate(it, today) } ?: "无", enabled = true,
             selected = date != null, onClick = { datePicker = true }, onClear = { dateText = null; timeText = null })
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         PickerRow("时间", if (date == null) "先选日期" else time?.format(DateTimeFormatter.ofPattern("HH:mm")) ?: "无",
             enabled = date != null, selected = time != null, isTime = true,
             onClick = { timePicker = true }, onClear = { timeText = null })
+        if (time != null && !notifications) {
+            Text("通知没打开，到点不会弹出提醒", color = clayText, style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp))
+                    .clickable { openNotificationSettings(context) }.heightIn(min = 48.dp).padding(horizontal = 16.dp, vertical = 8.dp))
+        } else if (isPastReminder(date, time, now, ZoneId.systemDefault())) {
+            Text("这个时间已经过了，不会再提醒", color = soft, style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.padding(horizontal = 16.dp))
+        }
+        }
         if (id != null) {
             TextButton(onClick = { deleting = true }, enabled = !busy,
                 modifier = Modifier.padding(top = 20.dp)) { Text("删除这条", color = ink) }
@@ -127,6 +160,12 @@ fun EditTaskScreen(id: Long?, defaultDate: String?, today: LocalDate, model: Tas
     }
     if (timePicker) LeafTimePicker(time, onDismiss = { timePicker = false }) {
         timeText = it.toString(); timePicker = false
+        now = Instant.now()
+        if (Build.VERSION.SDK_INT >= 33 && !notificationPermissionGranted(context)) {
+            context.getSharedPreferences("reminders", android.content.Context.MODE_PRIVATE).edit()
+                .putBoolean("notificationRequested", true).commit()
+            permission.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
     }
 }
 

@@ -36,6 +36,8 @@ class TaskConverters {
 
 @Dao
 interface TaskDao {
+    @Query("SELECT * FROM tasks WHERE status = 'OPEN' AND date IS NOT NULL AND time IS NOT NULL")
+    suspend fun getReminderCandidates(): List<Task>
     @Query("SELECT * FROM tasks ORDER BY id") suspend fun getAll(): List<Task>
     @Query("SELECT COUNT(*) FROM tasks") suspend fun count(): Int
     @Query("DELETE FROM tasks") suspend fun deleteAll()

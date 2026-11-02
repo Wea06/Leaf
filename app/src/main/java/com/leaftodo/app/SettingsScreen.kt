@@ -44,12 +44,13 @@ internal fun SettingsScreen(onClose: () -> Unit, model: BackupViewModel = viewMo
             Text("设置", Modifier.weight(1f), style = MaterialTheme.typography.titleLarge, color = ink, textAlign = TextAlign.Center)
             Spacer(Modifier.width(64.dp))
         }
+        ReminderSettingsBlock()
         Text("备份", Modifier.padding(top = 12.dp), style = MaterialTheme.typography.titleMedium, color = ink)
         Text("备份是一个 .json 文件，里面是你所有的事。Leaf 不联网，备份只会存在你自己选的位置。重装 App、换手机、装新版本之前，先导出一份，再拷一份到电脑或网盘。",
             style = MaterialTheme.typography.bodyMedium, color = soft)
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            BackupButton("导出备份", "存成一个文件，自己选放在哪", !busy) { export.launch(backupFileName(LocalDateTime.now())) }
-            BackupButton("从备份导入", "用备份替换现在所有的事；替换前自动另存一份到“下载/Leaf”", !busy) { import.launch(arrayOf("*/*")) }
+            SettingsButton("导出备份", "存成一个文件，自己选放在哪", !busy) { export.launch(backupFileName(LocalDateTime.now())) }
+            SettingsButton("从备份导入", "用备份替换现在所有的事；替换前自动另存一份到“下载/Leaf”", !busy) { import.launch(arrayOf("*/*")) }
         }
         (ui as? BackupUi.Busy)?.let { Text(it.text, color = soft, style = MaterialTheme.typography.bodyMedium) }
     }
@@ -68,10 +69,14 @@ internal fun SettingsScreen(onClose: () -> Unit, model: BackupViewModel = viewMo
 }
 
 @Composable
-private fun BackupButton(title: String, description: String, enabled: Boolean, onClick: () -> Unit) {
+internal fun SettingsButton(title: String, description: String, enabled: Boolean,
+    descriptionColor: androidx.compose.ui.graphics.Color = soft, trailing: (@Composable () -> Unit)? = null, onClick: () -> Unit) {
     Column(Modifier.fillMaxWidth().heightIn(min = 60.dp).clip(RoundedCornerShape(16.dp))
         .background(card).clickable(enabled = enabled, onClick = onClick).padding(16.dp)) {
-        Text(title, color = if (enabled) ink else soft, style = MaterialTheme.typography.bodyLarge)
-        Text(description, color = soft, fontSize = 13.sp)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(title, Modifier.weight(1f), color = if (enabled) ink else soft, style = MaterialTheme.typography.bodyLarge)
+            trailing?.invoke()
+        }
+        Text(description, color = descriptionColor, fontSize = 13.sp)
     }
 }
