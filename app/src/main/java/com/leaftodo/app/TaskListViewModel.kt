@@ -7,6 +7,7 @@ import com.leaftodo.app.data.*
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
+import java.time.YearMonth
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -17,6 +18,16 @@ class TaskListViewModel(application: Application) : AndroidViewModel(application
     private val dao = LeafDatabase.get(application).taskDao()
     val tasks = dao.observeListTasks().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
     val today = MutableStateFlow(LocalDate.now())
+    val calendarSelected = MutableStateFlow(LocalDate.now())
+    val monthTasks = calendarSelected.map { YearMonth.from(it) }.distinctUntilChanged()
+        .flatMapLatest { dao.observeBetween(it.atDay(1), it.atEndOfMonth()) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    fun selectDay(date: LocalDate) { calendarSelected.value = date }
+    fun flipMonth(by: Int) {
+        calendarSelected.value = selectionAfterFlip(shiftMonth(YearMonth.from(calendarSelected.value), by), today.value)
+    }
+    fun backToToday() { calendarSelected.value = today.value }
     val todayTasks = today.flatMapLatest { dao.observeTasksOn(it) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
     val recentTasks = today.flatMapLatest {

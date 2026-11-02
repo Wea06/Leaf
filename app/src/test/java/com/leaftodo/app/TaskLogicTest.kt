@@ -91,9 +91,9 @@ class TaskLogicTest {
         assertFalse(task.sameContent("标题", "内容", today.plusDays(1), LocalTime.NOON))
         assertFalse(task.sameContent("标题", "内容", today, null))
     }
-    @Test fun defaultDateOnToday() { assertEquals(today, defaultDateFor(TaskPage.TODAY, today)) }
-    @Test fun defaultDateOnList() { assertNull(defaultDateFor(TaskPage.LIST, today)) }
-    @Test fun defaultDateOnCalendar() { assertNull(defaultDateFor(TaskPage.CALENDAR, today)) }
+    @Test fun defaultDateOnToday() { assertEquals(today, defaultDateFor(TaskPage.TODAY, today, null)) }
+    @Test fun defaultDateOnList() { assertNull(defaultDateFor(TaskPage.LIST, today, null)) }
+    @Test fun defaultDateOnCalendar() { assertNull(defaultDateFor(TaskPage.CALENDAR, today, null)) }
     @Test fun todayOrdering() {
         val early = newTask("9点", "", today, LocalTime.of(9, 0), now)
         val late = newTask("15点", "", today, LocalTime.of(15, 0), now.minusSeconds(1))
