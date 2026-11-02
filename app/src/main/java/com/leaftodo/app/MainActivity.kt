@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.content.Intent
 import androidx.compose.ui.platform.LocalContext
 import com.leaftodo.app.reminder.*
+import com.leaftodo.app.settings.LeafSettings
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.leaftodo.app.data.*
@@ -52,7 +53,13 @@ class MainActivity : ComponentActivity() {
             navigationBarStyle = SystemBarStyle.light(android.graphics.Color.TRANSPARENT, android.graphics.Color.TRANSPARENT),
         )
         window.isNavigationBarContrastEnforced = false
-        setContent { LeafTheme { Surface(color = bg, contentColor = ink) { LeafApp(openTodayRequests) } } }
+        setContent { LeafTheme { Surface(color = bg, contentColor = ink) {
+            val effect by LeafSettings.get(this).paperEffect.collectAsState()
+            Box(Modifier.fillMaxSize()) {
+                LeafApp(openTodayRequests)
+                PaperOverlay(effect)
+            }
+        } } }
     }
 }
 
@@ -90,7 +97,7 @@ private fun LeafApp(openTodayRequests: Int) {
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner, model) {
         val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) { model.refreshToday(); Reminders.requestSync(context) }
+            if (event == Lifecycle.Event.ON_RESUME) { model.refreshToday(); Reminders.requestSync(context); NightlyReview.requestSync(context) }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
