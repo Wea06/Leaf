@@ -132,16 +132,17 @@ private fun MonthArrow(previous: Boolean, onClick: () -> Unit) {
 @Composable
 private fun CalendarDay(date: LocalDate, today: LocalDate, mark: DayMark, selected: Boolean, modifier: Modifier, onClick: () -> Unit) {
     val shape = RoundedCornerShape(12.dp)
-    Column(modifier.height(52.dp).clip(shape)
+    Box(modifier.height(52.dp).clip(shape)
         .then(if (mark == DayMark.TODAY) Modifier.background(clayTint) else Modifier)
         .then(if (selected) Modifier.border(1.5.dp, ink, shape) else Modifier)
         .clickable(onClick = onClick)
         .semantics { contentDescription = formatDate(date, today) + "，" + mark.label() },
-        horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+        contentAlignment = Alignment.Center) {
         Text(date.dayOfMonth.toString(), color = if (mark == DayMark.OPEN_STALE) soft else ink,
             style = MaterialTheme.typography.bodyLarge.copy(fontFeatureSettings = "tnum"))
-        Spacer(Modifier.height(4.dp))
-        Box(Modifier.height(8.dp), contentAlignment = Alignment.Center) { MarkDot(mark) }
+        // 标记独立放在下方，不参与日期数字的居中计算。
+        Box(Modifier.align(Alignment.BottomCenter).padding(bottom = 2.dp).height(8.dp),
+            contentAlignment = Alignment.Center) { MarkDot(mark) }
     }
 }
 
