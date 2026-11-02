@@ -162,7 +162,7 @@ private fun PickerRow(label: String, value: String, enabled: Boolean, selected: 
 }
 
 @Composable
-private fun LeafConfirm(message: String, confirm: String, cancel: String, onDismiss: () -> Unit, onConfirm: () -> Unit) {
+internal fun LeafConfirm(message: String, confirm: String, cancel: String, onDismiss: () -> Unit, onConfirm: () -> Unit) {
     AlertDialog(onDismissRequest = onDismiss, containerColor = card, tonalElevation = 0.dp,
         textContentColor = ink, text = { Text(message) },
         confirmButton = { TextButton(onClick = onConfirm) { Text(confirm, color = clayText) } },
