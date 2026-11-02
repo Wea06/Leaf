@@ -3,8 +3,10 @@ package com.leaftodo.app
 import android.os.Bundle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.leaftodo.app.data.formatDate
-import java.time.LocalDate
+import com.leaftodo.app.data.*
+import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -45,8 +47,23 @@ private fun LeafApp() {
     var selected by rememberSaveable { mutableIntStateOf(0) }
     val model: TaskListViewModel = viewModel()
     val tasks by model.tasks.collectAsStateWithLifecycle()
-    var adding by rememberSaveable { mutableStateOf(false) }
-    if (adding) AddTaskDialog(onDismiss = { adding = false }, onAdd = model::add)
+    val today by model.today.collectAsStateWithLifecycle()
+    val todayTasks by model.todayTasks.collectAsStateWithLifecycle()
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner, model) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) model.refreshToday()
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+    var editing by rememberSaveable { mutableStateOf(false) }
+    var editingId by rememberSaveable { mutableStateOf<Long?>(null) }
+    var defaultDate by rememberSaveable { mutableStateOf<String?>(null) }
+    if (editing) {
+        EditTaskScreen(editingId, defaultDate, today, model, onClose = { editing = false })
+        return
+    }
     val pages = listOf("今天", "清单", "日历")
     Column(
         Modifier.fillMaxSize().background(bg).windowInsetsPadding(WindowInsets.safeDrawing)
@@ -56,15 +73,25 @@ private fun LeafApp() {
                 Text(pages[selected], style = MaterialTheme.typography.headlineLarge)
                 if (selected == 1) {
                     Spacer(Modifier.height(20.dp))
-                    TaskList(tasks, model)
+                    TaskList(splitList(tasks), "还没有事，点右下角 ＋ 记一条",
+                        model::toggleDone, model::drop, model::reopen,
+                        onEdit = { editingId = it.id; editing = true })
                 }
                 if (selected == 0) {
                     Spacer(Modifier.height(20.dp))
-                    Text(LocalDate.now().let { formatDate(it, it) }, style = MaterialTheme.typography.bodyLarge)
+                    Text(formatDate(today, today), style = MaterialTheme.typography.bodyLarge)
+                    Spacer(Modifier.height(20.dp))
+                    TaskList(splitToday(todayTasks), "今天还没有事，点右下角 ＋ 记一条",
+                        model::toggleDone, model::drop, model::reopen,
+                        onEdit = { editingId = it.id; editing = true })
                 }
             }
             FloatingActionButton(
-                onClick = { if (selected == 1) adding = true },
+                onClick = {
+                    editingId = null
+                    defaultDate = defaultDateFor(TaskPage.entries[selected], today)?.toString()
+                    editing = true
+                },
                 modifier = Modifier.align(Alignment.BottomEnd).padding(end = 42.dp, bottom = 42.dp)
                     .size(56.dp).semantics { contentDescription = "新建一条事" },
                 shape = CircleShape,
