@@ -10,6 +10,17 @@ import org.junit.*
 import org.junit.Assert.*
 
 class TaskDaoTest {
+    @Test fun reminderCandidatesRequireOpenDateAndTime() = runBlocking {
+        val dao = db.taskDao()
+        val dated = newTask("有时间", "", LocalDate.of(2026, 11, 2), LocalTime.of(15, 0), now)
+        dao.insert(newListTask("清单", now))
+        dao.insert(dated.copy(time = null))
+        dao.insert(dated.withStatus(TaskStatus.DONE, now))
+        dao.insert(dated.withStatus(TaskStatus.DROPPED, now))
+        val id = dao.insert(dated)
+        assertEquals(listOf(dated.copy(id = id)), dao.getReminderCandidates())
+    }
+
     @Test fun betweenIncludesBoundariesAndAllStatuses() = runBlocking {
         val dao = db.taskDao()
         val from = LocalDate.of(2026, 11, 1)
