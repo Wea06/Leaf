@@ -85,7 +85,7 @@ class TaskLogicTest {
         val task = newTask("标题", "内容", today, LocalTime.NOON, now)
         assertTrue(task.sameContent("标题", "内容", today, LocalTime.NOON))
         assertTrue(task.sameContent(" 标题 ", "内容", today, LocalTime.NOON))
-        assertFalse(task.sameContent("标题", "内容  ", today, LocalTime.NOON))
+        assertTrue(task.sameContent("标题", "内容  ", today, LocalTime.NOON))
         assertFalse(task.sameContent("另一个", "内容", today, LocalTime.NOON))
         assertFalse(task.sameContent("标题", "另一行", today, LocalTime.NOON))
         assertFalse(task.sameContent("标题", "内容", today.plusDays(1), LocalTime.NOON))
@@ -105,5 +105,55 @@ class TaskLogicTest {
         assertEquals(listOf(early, late, a, b), groups.open)
         assertEquals(listOf(dropped, done), groups.closed)
         assertEquals(TaskGroups(emptyList(), emptyList()), splitToday(emptyList()))
+    }
+
+    @Test fun recentRangeIncludesBothEnds() {
+        assertEquals(LocalDate.of(2026, 10, 26)..LocalDate.of(2026, 11, 1), recentRange(LocalDate.of(2026, 11, 2)))
+    }
+    @Test fun recentRangeCrossesMonth() {
+        assertEquals(LocalDate.of(2026, 2, 25)..LocalDate.of(2026, 3, 3), recentRange(LocalDate.of(2026, 3, 4)))
+    }
+    @Test fun recentRangeCrossesYear() {
+        assertEquals(LocalDate.of(2026, 12, 27)..LocalDate.of(2027, 1, 2), recentRange(LocalDate.of(2027, 1, 3)))
+    }
+    @Test fun recentFiltersDatesStatusesAndOrdersGroups() {
+        val today = LocalDate.of(2026, 11, 2)
+        val tasks = listOf(0L, 1L, 3L, 7L, 8L, 10L, -1L).map { days ->
+            newTask("$days", "", today.minusDays(days), null, now)
+        } + listOf(newListTask("无日期", now)) + listOf(TaskStatus.DONE, TaskStatus.DROPPED).map {
+            newTask("已结束", "", today.minusDays(3), null, now).withStatus(it, now)
+        }
+        val result = recentUnfinished(tasks, today)
+        assertEquals(listOf(1L, 3L, 7L).map { today.minusDays(it) }, result.map { it.date })
+        assertEquals(listOf("1", "3", "7"), result.flatMap { it.tasks }.map { it.title })
+        assertTrue(recentUnfinished(emptyList(), today).isEmpty())
+    }
+    @Test fun recentOrdersTasksWithinDay() {
+        val date = today.minusDays(3)
+        val early = newTask("9点", "", date, LocalTime.of(9, 0), now)
+        val late = newTask("15点", "", date, LocalTime.of(15, 0), now.minusSeconds(1))
+        val a = newTask("早记", "", date, null, now)
+        val b = newTask("晚记", "", date, null, now.plusSeconds(1))
+        assertEquals(listOf(early, late, a, b), recentUnfinished(listOf(b, late, a, early), today).single().tasks)
+    }
+    @Test fun recentCompletionAndReopening() {
+        val task = newTask("待办", "", today.minusDays(3), null, now)
+        assertEquals(listOf(task), recentUnfinished(listOf(task), today).single().tasks)
+        val done = task.withStatus(TaskStatus.DONE, now.plusSeconds(1))
+        assertTrue(recentUnfinished(listOf(done), today).isEmpty())
+        val reopened = done.withStatus(TaskStatus.OPEN, now.plusSeconds(2))
+        assertEquals(listOf(reopened), recentUnfinished(listOf(reopened), today).single().tasks)
+    }
+    @Test fun createdDateUsesSuppliedTimezone() {
+        val task = newListTask("跨日", Instant.parse("2026-11-01T17:00:00Z"))
+        assertEquals(LocalDate.of(2026, 11, 2), task.createdDate(ZoneId.of("Asia/Shanghai")))
+        assertEquals(LocalDate.of(2026, 11, 1), task.createdDate(ZoneOffset.UTC))
+    }
+    @Test fun contentComparisonIgnoresTrailingWhitespaceOnly() {
+        val task = newTask("标题", "第一行\n第二行", today, null, now)
+        assertTrue(task.sameContent("标题", "第一行\n第二行  \n\n", today, null))
+        assertTrue(task.copy(note = "第一行\n第二行 \n").sameContent("标题", task.note, today, null))
+        assertFalse(task.sameContent("标题", "第壹行\n第二行", today, null))
+        assertFalse(task.sameContent("标题", " 第一行\n第二行", today, null))
     }
 }

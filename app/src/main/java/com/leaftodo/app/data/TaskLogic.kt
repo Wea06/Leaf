@@ -3,6 +3,7 @@ package com.leaftodo.app.data
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
+import java.time.ZoneId
 
 fun formatDate(date: LocalDate, today: LocalDate): String {
     val year = if (date.year == today.year) "" else "${date.year}年"
@@ -22,7 +23,7 @@ fun Task.edited(title: String, note: String, date: LocalDate?, time: LocalTime?,
         time = if (date == null) null else time, updatedAt = now)
 
 fun Task.sameContent(title: String, note: String, date: LocalDate?, time: LocalTime?): Boolean =
-    this.title == title.trim() && this.note == note && this.date == date && this.time == time
+    this.title == title.trim() && this.note.trimEnd() == note.trimEnd() && this.date == date && this.time == time
 
 enum class TaskPage { TODAY, LIST, CALENDAR }
 
@@ -31,9 +32,25 @@ fun defaultDateFor(page: TaskPage, today: LocalDate): LocalDate? =
 
 fun splitToday(tasks: List<Task>): TaskGroups = TaskGroups(
     tasks.filter { it.status == TaskStatus.OPEN }
-        .sortedWith(compareBy<Task> { it.time == null }.thenBy { it.time }.thenBy { it.createdAt }),
+        .sortedWith(openTaskComparator),
     tasks.filter { it.status != TaskStatus.OPEN }.sortedByDescending { it.closedAt },
 )
+
+private val openTaskComparator: Comparator<Task> =
+    compareBy<Task> { it.time == null }.thenBy { it.time }.thenBy { it.createdAt }
+
+fun recentRange(today: LocalDate): ClosedRange<LocalDate> = today.minusDays(7)..today.minusDays(1)
+
+data class DayGroup(val date: LocalDate, val tasks: List<Task>)
+
+fun recentUnfinished(tasks: List<Task>, today: LocalDate): List<DayGroup> {
+    val range = recentRange(today)
+    return tasks.filter { it.status == TaskStatus.OPEN && it.date?.let { date -> date in range } == true }
+        .groupBy { requireNotNull(it.date) }.toSortedMap(reverseOrder())
+        .map { (date, tasks) -> DayGroup(date, tasks.sortedWith(openTaskComparator)) }
+}
+
+fun Task.createdDate(zone: ZoneId): LocalDate = createdAt.atZone(zone).toLocalDate()
 
 fun Task.withStatus(newStatus: TaskStatus, now: Instant): Task = copy(
     status = newStatus, updatedAt = now,
