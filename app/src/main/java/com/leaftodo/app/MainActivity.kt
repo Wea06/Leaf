@@ -1,6 +1,9 @@
 package com.leaftodo.app
 
 import android.os.Bundle
+import android.content.Intent
+import androidx.compose.ui.platform.LocalContext
+import com.leaftodo.app.reminder.*
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.leaftodo.app.data.*
@@ -35,20 +38,29 @@ import kotlinx.coroutines.launch
 import com.leaftodo.app.ui.theme.*
 
 class MainActivity : ComponentActivity() {
+    private var openTodayRequests by mutableIntStateOf(0)
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        if (intent.action == OPEN_TODAY) openTodayRequests++
+    }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        if (savedInstanceState == null && intent.action == OPEN_TODAY) openTodayRequests++
         enableEdgeToEdge(
             statusBarStyle = SystemBarStyle.light(android.graphics.Color.TRANSPARENT, android.graphics.Color.TRANSPARENT),
             navigationBarStyle = SystemBarStyle.light(android.graphics.Color.TRANSPARENT, android.graphics.Color.TRANSPARENT),
         )
         window.isNavigationBarContrastEnforced = false
-        setContent { LeafTheme { Surface(color = bg, contentColor = ink) { LeafApp() } } }
+        setContent { LeafTheme { Surface(color = bg, contentColor = ink) { LeafApp(openTodayRequests) } } }
     }
 }
 
 @Composable
-private fun LeafApp() {
+private fun LeafApp(openTodayRequests: Int) {
+    val context = LocalContext.current
     var selected by rememberSaveable { mutableIntStateOf(0) }
+    LaunchedEffect(openTodayRequests) { if (openTodayRequests > 0) selected = 0 }
     val model: TaskListViewModel = viewModel()
     val tasks by model.tasks.collectAsStateWithLifecycle()
     val today by model.today.collectAsStateWithLifecycle()
@@ -78,7 +90,7 @@ private fun LeafApp() {
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner, model) {
         val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) model.refreshToday()
+            if (event == Lifecycle.Event.ON_RESUME) { model.refreshToday(); Reminders.requestSync(context) }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
