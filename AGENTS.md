@@ -14,6 +14,13 @@
 - 加新依赖前先说明为什么、有没有更小的办法。
 - 不提交 keystore、密码、local.properties。
 
+## 自用阶段（v0.1.0 起）
+- 用户手机上的**正式版**（包名 com.leaftodo.app，正式 keystore 签名，桌面名“Leaf”）里是用户的真实数据。
+- 开发、调试、仪器测试只用 **debug 版**（包名 com.leaftodo.app.debug，桌面名“Leaf 开发版”），和正式版互不影响。
+- 永远不要对 com.leaftodo.app 执行卸载、清除数据（adb uninstall、pm clear 等），也不要往它上面装 debug 版。
+- 数据库结构已冻结：app/schemas 里已有的 json 永远不改。改表 = 数据库版本 +1 + Migration + 用 MigrationTestHelper 写迁移测试 + 按 SPEC 7.1 处理备份格式（format +1，新版仍能导入旧备份）。CI 会拦。
+- 每次发新正式版：versionCode +1；提醒用户装之前先在旧版里导出一份备份；用同一个 keystore 签名覆盖安装，不卸载。
+
 ## 技术
 - Kotlin + Jetpack Compose (Material 3) + Room + DataStore；单 Activity。
 - 能写单元测试的逻辑（日期格式化、近 7 天筛选、日历标记计算、导出导入）都要写测试。
