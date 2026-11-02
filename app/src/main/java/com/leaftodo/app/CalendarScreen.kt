@@ -196,8 +196,8 @@ private fun CalendarDay(date: LocalDate, today: LocalDate, mark: DayMark, select
         contentAlignment = Alignment.Center) {
         Text(date.dayOfMonth.toString(), color = if (mark == DayMark.OPEN_STALE) soft else ink,
             style = MaterialTheme.typography.bodyLarge.copy(fontFeatureSettings = "tnum"))
-        // 标记独立放在下方，不参与日期数字的居中计算。
-        Box(Modifier.align(Alignment.BottomCenter).padding(bottom = 2.dp).height(8.dp),
+        // 标记独立放在数字下沿与框底之间，不参与日期数字的居中计算。
+        Box(Modifier.align(Alignment.BottomCenter).padding(bottom = 8.dp).height(8.dp),
             contentAlignment = Alignment.Center) { MarkDot(mark) }
     }
 }
