@@ -14,6 +14,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.DatePickerDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
@@ -130,17 +132,19 @@ fun CalendarScreen(model: TaskListViewModel, today: LocalDate, selected: LocalDa
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CalendarMonthPicker(initial: YearMonth, onDismiss: () -> Unit, onSelect: (YearMonth) -> Unit) {
-    var year by rememberSaveable { mutableIntStateOf(initial.year.coerceIn(1, 9999)) }
+    val years = DatePickerDefaults.YearRange
+    var year by rememberSaveable { mutableIntStateOf(initial.year.coerceIn(years)) }
     var month by rememberSaveable { mutableIntStateOf(initial.monthValue) }
     AlertDialog(onDismissRequest = onDismiss, containerColor = card, tonalElevation = 0.dp,
         titleContentColor = ink, textContentColor = ink,
         title = { Text("选择年月") },
         text = {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                MonthPickerColumn("年份", 9999, year, Modifier.weight(1f), { "${it}年" }) { year = it }
-                MonthPickerColumn("月份", 12, month, Modifier.weight(1f), { "${it}月" }) { month = it }
+                MonthPickerColumn("年份", years, year, Modifier.weight(1f), { "${it}年" }) { year = it }
+                MonthPickerColumn("月份", 1..12, month, Modifier.weight(1f), { "${it}月" }) { month = it }
             }
         },
         confirmButton = {
@@ -150,16 +154,16 @@ private fun CalendarMonthPicker(initial: YearMonth, onDismiss: () -> Unit, onSel
 }
 
 @Composable
-private fun MonthPickerColumn(label: String, count: Int, selected: Int, modifier: Modifier,
+private fun MonthPickerColumn(label: String, values: IntRange, selected: Int, modifier: Modifier,
     format: (Int) -> String, onSelect: (Int) -> Unit) {
-    val state = rememberLazyListState(initialFirstVisibleItemIndex = (selected - 3).coerceAtLeast(0))
+    val state = rememberLazyListState(initialFirstVisibleItemIndex = (selected - values.first - 2).coerceAtLeast(0))
     Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
         Text(label, color = soft, fontSize = 13.sp)
         Spacer(Modifier.height(8.dp))
         LazyColumn(Modifier.height(240.dp).selectableGroup(), state = state,
             verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            items(count, key = { it + 1 }) { index ->
-                val value = index + 1
+            items(values.count(), key = { it + values.first }) { index ->
+                val value = index + values.first
                 Box(Modifier.fillMaxWidth().heightIn(min = 48.dp).clip(RoundedCornerShape(12.dp))
                     .then(if (selected == value) Modifier.background(clayTint) else Modifier)
                     .selectable(selected == value, role = Role.RadioButton, onClick = { onSelect(value) })
