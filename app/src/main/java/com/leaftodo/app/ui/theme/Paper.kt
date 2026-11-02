@@ -36,7 +36,7 @@ fun PaperOverlay(effect: PaperEffect) {
     LaunchedEffect(effect, dimensions, density) {
         if (effect != PaperEffect.FIBER || dimensions == IntSize.Zero ||
             (cachedSize == dimensions && cachedDensity == density)) return@LaunchedEffect
-        if (bitmap != null) delay(250)
+        delay(250)
         val result = withContext(Dispatchers.Default) { renderFibers(dimensions, density) }
         bitmap = result
         cachedSize = dimensions
@@ -96,6 +96,6 @@ private fun renderFibers(size: IntSize, density: Float): ImageBitmap {
             x = endX; y = endY
         }
     }
-    Log.d("LeafPaper", "${size.width}x${size.height}: ${SystemClock.elapsedRealtime() - started} ms")
+    Log.d("LeafPaper", "${size.width}x${size.height}, density=$density: ${SystemClock.elapsedRealtime() - started} ms")
     return bitmap.asImageBitmap()
 }
