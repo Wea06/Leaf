@@ -11,6 +11,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.SystemBarStyle
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.selection.selectable
@@ -89,13 +90,25 @@ private fun LeafApp() {
         EditTaskScreen(editingId, defaultDate, today, model, onClose = { editing = false })
         return
     }
+    var settingsOpen by rememberSaveable { mutableStateOf(false) }
+    if (settingsOpen) {
+        SettingsScreen(onClose = { settingsOpen = false })
+        return
+    }
     val pages = listOf("今天", "清单", "日历")
     Column(
         Modifier.fillMaxSize().background(bg).windowInsetsPadding(WindowInsets.safeDrawing)
     ) {
         Box(Modifier.weight(1f).fillMaxWidth()) {
             Column(Modifier.padding(horizontal = 34.dp, vertical = 32.dp)) {
-                Text(pages[selected], style = MaterialTheme.typography.headlineLarge)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(pages[selected], Modifier.weight(1f), style = MaterialTheme.typography.headlineLarge)
+                    Box(Modifier.heightIn(min = 48.dp).clip(RoundedCornerShape(12.dp))
+                        .clickable { dismissSnackbar(); settingsOpen = true }.padding(horizontal = 12.dp),
+                        contentAlignment = Alignment.Center) {
+                        Text("设置", style = MaterialTheme.typography.bodyMedium, color = soft)
+                    }
+                }
                 if (selected == 2) {
                     Spacer(Modifier.height(20.dp))
                     CalendarScreen(model, today, calendarSelected,
