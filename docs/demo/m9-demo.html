@@ -217,13 +217,14 @@ function setStatus(task,st,page,kind){
   for(const [id,y] of after.cards){const b=before.cards.get(id);if(b!==undefined&&b!==y)moves[id]={from:b,to:y}}
   const fromY=before.cards.get(task.id);
   let toY=after.cards.get(task.id),vanish=false;
-  if(toY===undefined&&after.fold){toY=after.fold.y-8;vanish=true}
+  // folded: the card stays as the last open card (just above the fold row) while it sinks and slides, then fades out
+  if(toY===undefined&&after.fold){toY=after.fold.y;vanish=true}
   anims[task.id]={kind,t0:now()};
   if(fromY===undefined||toY===undefined||fromY===toY&&!vanish){draw();return}
   moves[task.id]={from:fromY,to:toY};
   const delay=kind==='undo'?60:kind==='drop'?300:360;
   motion={page,sinker:task.id,moves,vanish,t0:now()+delay,D:P.sinkMs,
-    fold:before.fold&&after.fold?{from:before.fold.y,to:after.fold.y}:null,h:after.h};
+    fold:vanish?{from:after.fold.y+80,to:after.fold.y,late:true}:before.fold&&after.fold?{from:before.fold.y,to:after.fold.y}:null,h:after.h};
 }
 function cardY(page,id,base){
   if(!motion||motion.page!==page)return base;
@@ -277,8 +278,7 @@ function drawCards(page,live){
     const alpha=m.vanish&&p>.8?1-(p-.8)/.2:1;
     if(L.cards.has(t.id)||m.vanish&&p<1)drawCard(t,y,page,L.h,false,depth,alpha)}
   for(const t of L.list){if(m&&t.id===m.sinker)continue;drawCard(t,cardY(page,t.id,L.cards.get(t.id)),page,L.h,live&&!m,0,1)}
-  if(L.fold){let fy=L.fold.y;if(m&&m.fold){fy=m.fold.from+(m.fold.to-m.fold.from)*ease(clamp((p-.2)/.6))}
-    ctx.fillStyle=C.bg;ctx.fillRect(CARD_X-4,fy-6,CARD_W+10,50);// fold row sits above the sinking card
+  if(L.fold){let fy=L.fold.y;if(m&&m.fold){fy=m.fold.from+(m.fold.to-m.fold.from)*ease(m.fold.late?clamp((p-.8)/.2):clamp((p-.2)/.6))}
     text(`已结束 ${L.fold.count} 条 · ${P.fold?'展开':'收起'}`,CARD_X,fy+26,13,C.soft);
     if(live&&!m)hits.push({x:CARD_X,y:fy,w:CARD_W,h:44,tap:()=>{setFold(!P.fold)}});}
   if(L.empty)text(page===2?'这天没有事，点右下角 ＋ 记一条':'还没有事，点右下角 ＋ 记一条',CARD_X,page===2?calTop()+440:130,15,C.soft);
