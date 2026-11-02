@@ -33,4 +33,39 @@ class TaskDaoTest {
         val id = db.taskDao().insert(task)
         assertEquals(task.copy(id = id), db.taskDao().getById(id))
     }
+
+    @Test fun onlyTasksOnSelectedDate() = runBlocking {
+        val dao = db.taskDao()
+        val date = LocalDate.of(2026, 11, 2)
+        val id = dao.insert(newTask("今天", "", date, null, now))
+        dao.insert(newTask("明天", "", date.plusDays(1), null, now))
+        dao.insert(newListTask("无日期", now))
+        assertEquals(listOf(id), dao.observeTasksOn(date).first().map { it.id })
+    }
+    @Test fun addingDateMovesTaskFromList() = runBlocking {
+        val dao = db.taskDao()
+        val date = LocalDate.of(2026, 11, 2)
+        val id = dao.insert(newListTask("待办", now))
+        assertEquals(listOf(id), dao.observeListTasks().first().map { it.id })
+        val original = dao.getById(id)!!
+        dao.update(original.edited(original.title, original.note, date, null, now.plusSeconds(1)))
+        assertTrue(dao.observeListTasks().first().isEmpty())
+        assertEquals(listOf(id), dao.observeTasksOn(date).first().map { it.id })
+    }
+    @Test fun titleEditPreservesStoredDateAndTime() = runBlocking {
+        val dao = db.taskDao()
+        val original = newTask("标题", "内容", LocalDate.of(2026, 11, 2), LocalTime.of(15, 0), now)
+        val id = dao.insert(original)
+        val loaded = dao.getById(id)!!
+        dao.update(loaded.edited("改标题", loaded.note, loaded.date, loaded.time, now.plusSeconds(1)))
+        val edited = dao.getById(id)!!
+        assertEquals("改标题", edited.title)
+        assertEquals(original.date, edited.date); assertEquals(original.time, edited.time)
+    }
+    @Test fun deletionRemovesTask() = runBlocking {
+        val dao = db.taskDao()
+        val id = dao.insert(newListTask("删除", now))
+        dao.delete(dao.getById(id)!!)
+        assertNull(dao.getById(id))
+    }
 }

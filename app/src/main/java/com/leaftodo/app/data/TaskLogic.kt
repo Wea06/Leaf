@@ -2,6 +2,7 @@ package com.leaftodo.app.data
 
 import java.time.Instant
 import java.time.LocalDate
+import java.time.LocalTime
 
 fun formatDate(date: LocalDate, today: LocalDate): String {
     val year = if (date.year == today.year) "" else "${date.year}年"
@@ -10,7 +11,29 @@ fun formatDate(date: LocalDate, today: LocalDate): String {
 }
 
 fun newListTask(title: String, now: Instant): Task =
-    Task(title = title.trim(), createdAt = now, updatedAt = now)
+    newTask(title, "", null, null, now)
+
+fun newTask(title: String, note: String, date: LocalDate?, time: LocalTime?, now: Instant): Task =
+    Task(title = title.trim(), note = note.trimEnd(), date = date,
+        time = if (date == null) null else time, createdAt = now, updatedAt = now)
+
+fun Task.edited(title: String, note: String, date: LocalDate?, time: LocalTime?, now: Instant): Task =
+    copy(title = title.trim(), note = note.trimEnd(), date = date,
+        time = if (date == null) null else time, updatedAt = now)
+
+fun Task.sameContent(title: String, note: String, date: LocalDate?, time: LocalTime?): Boolean =
+    this.title == title.trim() && this.note == note && this.date == date && this.time == time
+
+enum class TaskPage { TODAY, LIST, CALENDAR }
+
+fun defaultDateFor(page: TaskPage, today: LocalDate): LocalDate? =
+    if (page == TaskPage.TODAY) today else null
+
+fun splitToday(tasks: List<Task>): TaskGroups = TaskGroups(
+    tasks.filter { it.status == TaskStatus.OPEN }
+        .sortedWith(compareBy<Task> { it.time == null }.thenBy { it.time }.thenBy { it.createdAt }),
+    tasks.filter { it.status != TaskStatus.OPEN }.sortedByDescending { it.closedAt },
+)
 
 fun Task.withStatus(newStatus: TaskStatus, now: Instant): Task = copy(
     status = newStatus, updatedAt = now,

@@ -49,4 +49,61 @@ class TaskLogicTest {
         assertTrue(splitList(emptyList()).open.isEmpty())
     }
     @Test fun schemaExists() { assertTrue(File("schemas/com.leaftodo.app.data.LeafDatabase/1.json").isFile) }
+
+    @Test fun newTaskNormalizesOnlyUserInput() {
+        val dated = newTask("  标题  ", "  内容\n第二行  ", today, LocalTime.of(15, 0), now)
+        assertEquals("标题", dated.title)
+        assertEquals("  内容\n第二行", dated.note)
+        assertEquals(today, dated.date); assertEquals(LocalTime.of(15, 0), dated.time)
+        assertEquals(now, dated.createdAt); assertEquals(now, dated.updatedAt)
+        assertEquals(TaskStatus.OPEN, dated.status); assertNull(dated.closedAt)
+        val undated = newTask("a", "", null, LocalTime.NOON, now)
+        assertNull(undated.date); assertNull(undated.time)
+    }
+    @Test fun editTitlePreservesEveryOtherField() {
+        val task = newTask("标题", "内容", today, LocalTime.of(15, 0), now)
+            .copy(id = 42, status = TaskStatus.DONE, closedAt = now.plusSeconds(1))
+        val edited = task.edited(" 新标题 ", task.note, task.date, task.time, now.plusSeconds(2))
+        assertEquals(task.copy(title = "新标题", updatedAt = now.plusSeconds(2)), edited)
+    }
+    @Test fun changingDateKeepsTime() {
+        val task = newTask("标题", "内容", today, LocalTime.of(15, 0), now)
+        val edited = task.edited(task.title, task.note, today.plusDays(1), task.time, now.plusSeconds(1))
+        assertEquals(today.plusDays(1), edited.date); assertEquals(task.time, edited.time)
+    }
+    @Test fun clearingDateClearsTime() {
+        val task = newTask("标题", "", today, LocalTime.NOON, now)
+        val edited = task.edited(task.title, task.note, null, task.time, now.plusSeconds(1))
+        assertNull(edited.date); assertNull(edited.time)
+    }
+    @Test fun addingDateDoesNotFillTime() {
+        val task = newListTask("标题", now)
+        val edited = task.edited(task.title, task.note, today, null, now.plusSeconds(1))
+        assertEquals(today, edited.date); assertNull(edited.time)
+    }
+    @Test fun contentComparison() {
+        val task = newTask("标题", "内容", today, LocalTime.NOON, now)
+        assertTrue(task.sameContent("标题", "内容", today, LocalTime.NOON))
+        assertTrue(task.sameContent(" 标题 ", "内容", today, LocalTime.NOON))
+        assertFalse(task.sameContent("标题", "内容  ", today, LocalTime.NOON))
+        assertFalse(task.sameContent("另一个", "内容", today, LocalTime.NOON))
+        assertFalse(task.sameContent("标题", "另一行", today, LocalTime.NOON))
+        assertFalse(task.sameContent("标题", "内容", today.plusDays(1), LocalTime.NOON))
+        assertFalse(task.sameContent("标题", "内容", today, null))
+    }
+    @Test fun defaultDateOnToday() { assertEquals(today, defaultDateFor(TaskPage.TODAY, today)) }
+    @Test fun defaultDateOnList() { assertNull(defaultDateFor(TaskPage.LIST, today)) }
+    @Test fun defaultDateOnCalendar() { assertNull(defaultDateFor(TaskPage.CALENDAR, today)) }
+    @Test fun todayOrdering() {
+        val early = newTask("9点", "", today, LocalTime.of(9, 0), now)
+        val late = newTask("15点", "", today, LocalTime.of(15, 0), now.minusSeconds(1))
+        val a = newTask("无时间早", "", today, null, now)
+        val b = newTask("无时间晚", "", today, null, now.plusSeconds(1))
+        val done = early.withStatus(TaskStatus.DONE, now.plusSeconds(2))
+        val dropped = late.withStatus(TaskStatus.DROPPED, now.plusSeconds(3))
+        val groups = splitToday(listOf(b, dropped, late, a, done, early))
+        assertEquals(listOf(early, late, a, b), groups.open)
+        assertEquals(listOf(dropped, done), groups.closed)
+        assertEquals(TaskGroups(emptyList(), emptyList()), splitToday(emptyList()))
+    }
 }
