@@ -68,4 +68,28 @@ class TaskDaoTest {
         dao.delete(dao.getById(id)!!)
         assertNull(dao.getById(id))
     }
+
+    @Test fun openBetweenFiltersInclusiveDatesAndStatus() = runBlocking {
+        val dao = db.taskDao()
+        val from = LocalDate.of(2026, 10, 26)
+        val to = LocalDate.of(2026, 11, 1)
+        val dates = listOf(from.minusDays(1), from, LocalDate.of(2026, 10, 29), to, to.plusDays(1))
+        val ids = dates.map { dao.insert(newTask("$it", "", it, null, now)) }
+        dao.insert(newTask("已完成", "", dates[2], null, now).withStatus(TaskStatus.DONE, now))
+        dao.insert(newListTask("无日期", now))
+        assertEquals(setOf(ids[1], ids[2], ids[3]), dao.observeOpenBetween(from, to).first().map { it.id }.toSet())
+    }
+
+    @Test fun openBetweenReflectsCompletionAndReopening() = runBlocking {
+        val dao = db.taskDao()
+        val from = LocalDate.of(2026, 10, 26)
+        val to = LocalDate.of(2026, 11, 1)
+        val id = dao.insert(newTask("待办", "", LocalDate.of(2026, 10, 29), null, now))
+        val original = dao.getById(id)!!
+        assertEquals(listOf(id), dao.observeOpenBetween(from, to).first().map { it.id })
+        dao.update(original.withStatus(TaskStatus.DONE, now.plusSeconds(1)))
+        assertTrue(dao.observeOpenBetween(from, to).first().isEmpty())
+        dao.update(dao.getById(id)!!.withStatus(TaskStatus.OPEN, now.plusSeconds(2)))
+        assertEquals(listOf(id), dao.observeOpenBetween(from, to).first().map { it.id })
+    }
 }
