@@ -36,6 +36,7 @@ class TaskConverters {
 
 @Dao
 interface TaskDao {
+    @Query("SELECT * FROM tasks WHERE date = :date") suspend fun getTasksOn(date: LocalDate): List<Task>
     @Query("SELECT * FROM tasks WHERE status = 'OPEN' AND date IS NOT NULL AND time IS NOT NULL")
     suspend fun getReminderCandidates(): List<Task>
     @Query("SELECT * FROM tasks ORDER BY id") suspend fun getAll(): List<Task>
