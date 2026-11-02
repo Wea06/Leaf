@@ -28,6 +28,9 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.style.TextOverflow
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
 import com.leaftodo.app.ui.theme.*
 
 class MainActivity : ComponentActivity() {
@@ -49,6 +52,27 @@ private fun LeafApp() {
     val tasks by model.tasks.collectAsStateWithLifecycle()
     val today by model.today.collectAsStateWithLifecycle()
     val todayTasks by model.todayTasks.collectAsStateWithLifecycle()
+    val recentTasks by model.recentTasks.collectAsStateWithLifecycle()
+    var todayExpanded by rememberSaveable { mutableStateOf(false) }
+    var listExpanded by rememberSaveable { mutableStateOf(false) }
+    val snackbarHost = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+    var snackbarJob by remember { mutableStateOf<Job?>(null) }
+    fun dismissSnackbar() {
+        snackbarJob?.cancel()
+        snackbarHost.currentSnackbarData?.dismiss()
+    }
+    fun recentClosed(task: Task, dropped: Boolean) {
+        if (dropped) model.drop(task) else model.toggleDone(task)
+        dismissSnackbar()
+        snackbarJob = scope.launch {
+            val result = snackbarHost.showSnackbar(
+                message = "${if (dropped) "已划掉" else "已完成"}：${task.title}",
+                actionLabel = "撤回", duration = SnackbarDuration.Short,
+            )
+            if (result == SnackbarResult.ActionPerformed) model.reopen(task)
+        }
+    }
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner, model) {
         val observer = LifecycleEventObserver { _, event ->
@@ -73,21 +97,26 @@ private fun LeafApp() {
                 Text(pages[selected], style = MaterialTheme.typography.headlineLarge)
                 if (selected == 1) {
                     Spacer(Modifier.height(20.dp))
-                    TaskList(splitList(tasks), "还没有事，点右下角 ＋ 记一条",
-                        model::toggleDone, model::drop, model::reopen,
-                        onEdit = { editingId = it.id; editing = true })
+                    TaskList(splitList(tasks), "还没有事，点右下角 ＋ 记一条", today,
+                        expanded = listExpanded, onExpandedChange = { listExpanded = it }, showCreatedDate = true,
+                        onToggle = model::toggleDone, onDrop = model::drop, onReopen = model::reopen,
+                        onEdit = { dismissSnackbar(); editingId = it.id; editing = true })
                 }
                 if (selected == 0) {
                     Spacer(Modifier.height(20.dp))
                     Text(formatDate(today, today), style = MaterialTheme.typography.bodyLarge)
                     Spacer(Modifier.height(20.dp))
-                    TaskList(splitToday(todayTasks), "今天还没有事，点右下角 ＋ 记一条",
-                        model::toggleDone, model::drop, model::reopen,
-                        onEdit = { editingId = it.id; editing = true })
+                    TaskList(splitToday(todayTasks), "今天还没有事，点右下角 ＋ 记一条", today,
+                        expanded = todayExpanded, onExpandedChange = { todayExpanded = it },
+                        recent = recentUnfinished(recentTasks, today),
+                        onRecentToggle = { recentClosed(it, false) }, onRecentDrop = { recentClosed(it, true) },
+                        onToggle = model::toggleDone, onDrop = model::drop, onReopen = model::reopen,
+                        onEdit = { dismissSnackbar(); editingId = it.id; editing = true })
                 }
             }
             FloatingActionButton(
                 onClick = {
+                    dismissSnackbar()
                     editingId = null
                     defaultDate = defaultDateFor(TaskPage.entries[selected], today)?.toString()
                     editing = true
@@ -100,6 +129,16 @@ private fun LeafApp() {
             ) {
                 Text("+", style = MaterialTheme.typography.headlineLarge)
             }
+            SnackbarHost(snackbarHost, Modifier.align(Alignment.BottomCenter)
+                .padding(start = 34.dp, end = 34.dp, bottom = 114.dp)) { data ->
+                Snackbar(shape = RoundedCornerShape(16.dp), containerColor = ink, contentColor = card,
+                    action = {
+                        TextButton(onClick = { data.performAction() },
+                            colors = ButtonDefaults.textButtonColors(contentColor = clay)) { Text("撤回") }
+                    }) {
+                    Text(data.visuals.message, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
+            }
         }
         Row(
             Modifier.fillMaxWidth().selectableGroup().padding(horizontal = 22.dp, vertical = 12.dp),
@@ -110,7 +149,7 @@ private fun LeafApp() {
                     Modifier.weight(1f).heightIn(min = 48.dp)
                         .clip(RoundedCornerShape(16.dp))
                         .background(if (selected == index) clayTint else Color.Transparent, RoundedCornerShape(16.dp))
-                        .selectable(selected == index, role = Role.Tab, onClick = { selected = index })
+                        .selectable(selected == index, role = Role.Tab, onClick = { dismissSnackbar(); selected = index })
                         .padding(horizontal = 8.dp, vertical = 12.dp),
                     contentAlignment = Alignment.Center,
                 ) {
