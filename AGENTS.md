@@ -15,7 +15,7 @@
 - 不提交 keystore、密码、local.properties。
 
 ## 技术
-- Kotlin + Jetpack Compose (Material 3) + Room + DataStore；单 Activity。
+- Kotlin + Jetpack Compose (Material 3) + Room + SharedPreferences（设置）；单 Activity。
 - 能写单元测试的逻辑（日期格式化、近 7 天筛选、日历标记计算、导出导入）都要写测试。
 
 ## 交付
