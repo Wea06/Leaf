@@ -30,7 +30,8 @@ minSdk 29，包名 com.leaftodo.app。
 - 系统切换深色模式后，Leaf 仍保持相同浅色。
 - M1 时尚无数据库和列表；M2 已加入 Room 和清单操作。编辑、提醒、设置、手绘效果留待后续里程碑。
 
-字体未裁剪：文楷 Regular / Medium，Newsreader 14pt Regular / SemiBold。
+字体：中文用霞鹜文楷 Regular / Medium 的常用字子集（M9 裁剪，3913 字，每个约 2MB；按 OFL 改名为 Leaf Kai），英文 Newsreader 14pt Regular / SemiBold。
+裁剪脚本和字表在 tools/fonts；界面加了新中文字后如果 FontCoverageTest 报缺字，在仓库根目录跑 `pip install fonttools` 和 `python tools/fonts/subset_kai.py`，再提交新字体和 tools/fonts/leaf-kai-chars.txt。
 资源文件位于 app/src/main/res/font，授权说明位于 app/src/main/assets/licenses。
 
 

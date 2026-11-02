@@ -91,7 +91,9 @@
 - 字重：正文 Regular 400，标题 SemiBold 600（文楷用 Medium，它没有 Bold）。
 - Compose：**不能**只把两套字体放进一个 `FontFamily`。Compose 只会按字重挑其中一个文件，缺字时直接掉到系统字体，不会逐字回退到文楷。
   做法（M1 已实现，见 `ui/theme/Type.kt`）：用 `android.graphics.Typeface.CustomFallbackBuilder`（API 29+，所以 minSdk 29），Newsreader 为主、文楷为 fallback，分别建“正文”（Regular + Regular）和“标题”（SemiBold + Medium）两个 Typeface，再用 `FontFamily(typeface)` 包给 Compose。
-- 体积（用户定的目标）：文楷**打包常用字 3500 字起、最多 5000 字**（以《通用规范汉字表》一级字 3500 为底，再补常用二级字），连同常用标点和全角符号一起做成子集字体放进 App；不在子集里的字自动回退系统字体。具体怎么裁剪到时候再做。
+- 体积（用户定的目标）：文楷**打包常用字 3500 字起、最多 5000 字**，连同常用标点和全角符号一起做成子集字体放进 App；不在子集里的字自动回退系统字体。
+  M9 已做（`tools/fonts/subset_kai.py`）：字表 =《通用规范汉字表》一级 3500 ∪《现代汉语常用字表》3500 ∪ GB2312 一级 3755 ∪ App 源码里出现的汉字，共 3913 字；每个字重从 25MB 减到约 2MB。按 SIL OFL 第 3 条，裁剪后的修改版不能再叫“霞鹜/LXGW”，字体内部名改为 **Leaf Kai**，文件为 `res/font/leaf_kai_regular.ttf`、`leaf_kai_medium.ttf`。
+  界面加了新中文字后，单元测试 `FontCoverageTest` 会检查字体里有没有；报缺字就重跑脚本。
 - 字号（sp）：大标题 26 / 标题 20 / 正文 16 / 次要 13。行高 1.5 倍。
 
 ## 5. 动效参数

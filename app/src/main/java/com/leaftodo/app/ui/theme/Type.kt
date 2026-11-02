@@ -11,7 +11,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.sp
 import com.leaftodo.app.R
 
-// Build explicit Android fallback chains: Latin uses Newsreader, Chinese uses WenKai.
+// Build explicit Android fallback chains: Latin uses Newsreader, Chinese uses Leaf Kai (LXGW WenKai subset, see tools/fonts).
 private fun mixedFamily(context: Context, latin: Int, chinese: Int, weight: Int): FontFamily {
     fun family(resource: Int) = AndroidFontFamily.Builder(
         Font.Builder(context.resources, resource).setWeight(weight).build()
@@ -25,8 +25,8 @@ private fun mixedFamily(context: Context, latin: Int, chinese: Int, weight: Int)
 }
 
 fun leafTypography(context: Context): Typography {
-    val body = mixedFamily(context, R.font.newsreader_regular, R.font.lxgw_wenkai_regular, 400)
-    val heading = mixedFamily(context, R.font.newsreader_semibold, R.font.lxgw_wenkai_medium, 600)
+    val body = mixedFamily(context, R.font.newsreader_regular, R.font.leaf_kai_regular, 400)
+    val heading = mixedFamily(context, R.font.newsreader_semibold, R.font.leaf_kai_medium, 600)
     fun bodyStyle(size: Int) = TextStyle(fontFamily = body, fontSize = size.sp, lineHeight = (size * 1.5).sp)
     fun headingStyle(size: Int) = TextStyle(fontFamily = heading, fontSize = size.sp, lineHeight = (size * 1.5).sp)
     return Typography(
