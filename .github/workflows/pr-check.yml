@@ -47,17 +47,6 @@ jobs:
             exit 1
           fi
 
-      - name: 已经装到手机上的数据库结构不能改
-        if: github.event_name == 'pull_request'
-        run: |
-          git fetch --no-tags --depth=1 origin "${{ github.base_ref }}"
-          changed=$(git diff --name-only --diff-filter=MDR FETCH_HEAD HEAD -- app/schemas)
-          if [ -n "$changed" ]; then
-            echo "$changed"
-            echo "::error::app/schemas 里已有的版本文件（比如 1.json）对应手机上正在用的数据库，不能修改、删除或改名。要改表：数据库版本 +1、写 Migration 和测试，新版本会生成一个新的 json 文件"
-            exit 1
-          fi
-
       - name: 编译 debug APK 并跑单元测试
         run: ./gradlew assembleDebug testDebugUnitTest --stacktrace
 

@@ -16,17 +16,12 @@ android {
         minSdk = 29
         targetSdk = 37
         versionCode = 1
-        versionName = "0.1.0"
+        versionName = "0.0.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
-        // 开发版和自用正式版装在同一台手机上互不影响：开发版包名多 .debug，桌面名“Leaf 开发版”。
-        debug {
-            applicationIdSuffix = ".debug"
-            versionNameSuffix = "-debug"
-        }
         release {
             optimization {
                 enable = true
