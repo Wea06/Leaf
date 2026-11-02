@@ -7,11 +7,17 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -20,6 +26,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -36,12 +43,19 @@ fun CalendarScreen(model: TaskListViewModel, today: LocalDate, selected: LocalDa
     val marks = remember(tasks, month, today) { calendarMarks(tasks, month, today) }
     val grid = remember(month) { monthGrid(month) }
     val selectedTasks = remember(tasks, selected) { dayTasks(tasks, selected) }
+    var monthPicker by rememberSaveable { mutableStateOf(false) }
+    if (monthPicker) CalendarMonthPicker(month, onDismiss = { monthPicker = false }) {
+        model.selectMonth(it)
+        monthPicker = false
+    }
     LazyColumn(contentPadding = PaddingValues(bottom = 120.dp)) {
         item(key = "month") {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 MonthArrow(previous = true) { model.flipMonth(-1) }
                 Text(formatMonth(month), color = ink, style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.weight(1f), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                    modifier = Modifier.weight(1f).clip(RoundedCornerShape(12.dp))
+                        .clickable(onClickLabel = "选择年月") { monthPicker = true }
+                        .padding(vertical = 9.dp), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
                 MonthArrow(previous = false) { model.flipMonth(1) }
             }
             Spacer(Modifier.height(16.dp))
@@ -113,6 +127,48 @@ fun CalendarScreen(model: TaskListViewModel, today: LocalDate, selected: LocalDa
         }
         taskCards(selectedTasks, today, false, model::toggleDone, model::drop, model::reopen, onEdit,
             dimmed = { isStale(it, today) })
+    }
+}
+
+@Composable
+private fun CalendarMonthPicker(initial: YearMonth, onDismiss: () -> Unit, onSelect: (YearMonth) -> Unit) {
+    var year by rememberSaveable { mutableIntStateOf(initial.year.coerceIn(1, 9999)) }
+    var month by rememberSaveable { mutableIntStateOf(initial.monthValue) }
+    AlertDialog(onDismissRequest = onDismiss, containerColor = card, tonalElevation = 0.dp,
+        titleContentColor = ink, textContentColor = ink,
+        title = { Text("选择年月") },
+        text = {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                MonthPickerColumn("年份", 9999, year, Modifier.weight(1f), { "${it}年" }) { year = it }
+                MonthPickerColumn("月份", 12, month, Modifier.weight(1f), { "${it}月" }) { month = it }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { onSelect(YearMonth.of(year, month)) }) { Text("确定", color = clayText) }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("取消", color = ink) } })
+}
+
+@Composable
+private fun MonthPickerColumn(label: String, count: Int, selected: Int, modifier: Modifier,
+    format: (Int) -> String, onSelect: (Int) -> Unit) {
+    val state = rememberLazyListState(initialFirstVisibleItemIndex = (selected - 3).coerceAtLeast(0))
+    Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(label, color = soft, fontSize = 13.sp)
+        Spacer(Modifier.height(8.dp))
+        LazyColumn(Modifier.height(240.dp).selectableGroup(), state = state,
+            verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            items(count, key = { it + 1 }) { index ->
+                val value = index + 1
+                Box(Modifier.fillMaxWidth().heightIn(min = 48.dp).clip(RoundedCornerShape(12.dp))
+                    .then(if (selected == value) Modifier.background(clayTint) else Modifier)
+                    .selectable(selected == value, role = Role.RadioButton, onClick = { onSelect(value) })
+                    .padding(vertical = 8.dp), contentAlignment = Alignment.Center) {
+                    Text(format(value), color = ink,
+                        style = MaterialTheme.typography.bodyLarge.copy(fontFeatureSettings = "tnum"))
+                }
+            }
+        }
     }
 }
 

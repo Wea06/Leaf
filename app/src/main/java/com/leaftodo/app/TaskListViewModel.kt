@@ -24,6 +24,9 @@ class TaskListViewModel(application: Application) : AndroidViewModel(application
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     fun selectDay(date: LocalDate) { calendarSelected.value = date }
+    fun selectMonth(month: YearMonth) {
+        calendarSelected.value = selectionAfterFlip(month, today.value)
+    }
     fun flipMonth(by: Int) {
         calendarSelected.value = selectionAfterFlip(shiftMonth(YearMonth.from(calendarSelected.value), by), today.value)
     }
