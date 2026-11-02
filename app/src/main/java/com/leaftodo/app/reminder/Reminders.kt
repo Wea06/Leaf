@@ -33,7 +33,7 @@ class ReminderStore(context: Context) {
 }
 
 class LeafApplication : Application() {
-    override fun onCreate() { super.onCreate(); createReminderChannel(this) }
+    override fun onCreate() { super.onCreate(); createReminderChannel(this); createReviewChannel(this) }
 }
 
 fun createReminderChannel(context: Context) {
@@ -140,7 +140,7 @@ object Reminders {
         .setAutoCancel(true).setOnlyAlertOnce(false)
 }
 
-private fun BroadcastReceiver.runReminder(block: suspend () -> Unit) {
+internal fun BroadcastReceiver.runReminder(block: suspend () -> Unit) {
     val pending = goAsync()
     Reminders.scope.launch {
         try { withTimeout(9_000) { block() } } catch (_: Exception) { }
@@ -164,6 +164,9 @@ class ReminderSystemReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action !in setOf(Intent.ACTION_BOOT_COMPLETED, Intent.ACTION_MY_PACKAGE_REPLACED,
                 Intent.ACTION_TIME_CHANGED, Intent.ACTION_TIMEZONE_CHANGED, AlarmManager.ACTION_SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED)) return
-        runReminder { Reminders.sync(context.applicationContext) }
+        runReminder {
+            try { Reminders.sync(context.applicationContext) }
+            finally { NightlyReview.sync(context.applicationContext) }
+        }
     }
 }

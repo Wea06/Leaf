@@ -1,11 +1,7 @@
 package com.leaftodo.app
 
-import android.Manifest
 import android.os.Build
 import android.os.PowerManager
-import android.content.Context
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -13,7 +9,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
-import androidx.core.app.ActivityCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import com.leaftodo.app.data.*
@@ -34,19 +29,7 @@ internal fun ReminderSettingsBlock() {
     var precise by remember { mutableStateOf(ReminderStore(context).preciseMode) }
     var next by remember { mutableStateOf<NextReminder?>(null) }
     var today by remember { mutableStateOf(LocalDate.now()) }
-    val requestedPrefs = remember { context.getSharedPreferences("reminders", Context.MODE_PRIVATE) }
-    val permission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
-        revision++
-    }
-    fun enableNotifications() {
-        val activity = context.findActivity()
-        val requested = requestedPrefs.getBoolean("notificationRequested", false)
-        if (Build.VERSION.SDK_INT >= 33 && !notificationPermissionGranted(context) &&
-            (!requested || (activity != null && ActivityCompat.shouldShowRequestPermissionRationale(activity, Manifest.permission.POST_NOTIFICATIONS)))) {
-            requestedPrefs.edit().putBoolean("notificationRequested", true).commit()
-            permission.launch(Manifest.permission.POST_NOTIFICATIONS)
-        } else openNotificationSettings(context)
-    }
+    val enableNotifications = rememberEnableNotifications { revision++ }
     DisposableEffect(owner) {
         val observer = LifecycleEventObserver { _, event -> if (event == Lifecycle.Event.ON_RESUME) revision++ }
         owner.lifecycle.addObserver(observer)
@@ -67,11 +50,11 @@ internal fun ReminderSettingsBlock() {
     val upcoming = next
     Text(if (upcoming == null) "现在没有要提醒的事" else
         "下一次提醒：${reminderText(upcoming.tasks.first(), today)} ${upcoming.tasks.first().title}" +
-            if (upcoming.tasks.size > 1) "等 ${upcoming.tasks.size} 条" else "",
+            if (upcoming.tasks.size > 1) " 等 ${upcoming.tasks.size} 条" else "",
         style = MaterialTheme.typography.bodyMedium, color = if (upcoming == null) soft else ink)
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         SettingsButton("通知", if (notifications) "已打开" else "没打开，点这里打开", true,
-            descriptionColor = if (notifications) soft else clayText, onClick = ::enableNotifications)
+            descriptionColor = if (notifications) soft else clayText, onClick = enableNotifications)
         SettingsButton("闹钟和提醒", if (exact) "已允许" else "没允许，提醒可能会晚，点这里打开", true,
             descriptionColor = if (exact) soft else clayText) { openExactAlarmSettings(context) }
         SettingsButton("后台运行不受限制", if (battery) "已允许" else "没允许，点这里打开", true,

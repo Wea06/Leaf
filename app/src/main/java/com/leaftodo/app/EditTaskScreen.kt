@@ -236,7 +236,7 @@ private fun LeafDatePicker(date: LocalDate?, today: LocalDate, onDismiss: () -> 
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun LeafTimePicker(time: LocalTime?, onDismiss: () -> Unit, onSelect: (LocalTime) -> Unit) {
+internal fun LeafTimePicker(time: LocalTime?, onDismiss: () -> Unit, onSelect: (LocalTime) -> Unit) {
     val state = rememberTimePickerState(initialHour = time?.hour ?: 9, initialMinute = time?.minute ?: 0, is24Hour = true)
     AlertDialog(onDismissRequest = onDismiss, containerColor = card, tonalElevation = 0.dp,
         titleContentColor = ink, title = { Text("时间") }, text = {
