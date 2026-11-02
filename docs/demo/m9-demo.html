@@ -352,7 +352,7 @@ function drawTabs(){
   labels.forEach((l,i)=>{const sel=trans&&trans.kind==='tab'?Math.abs(pos-i)<.5:i===tab;text(l,x0+tw*i+tw/2,y+29,16,sel?C.ink:C.soft,400,'center');
     hits.push({x:x0+tw*i,y,w:tw,h:46,tap:()=>goTab(i)})});
 }
-function drawFab(){const fx=LW-72,fy=LH-140,s=70*733+F()*97,off=3,a=P.amp;
+function drawFab(){const fx=LW-72,fy=LH-140,s=70*733+F()*97,off=1.5,a=P.amp;// colour up-left, ring down-right, 1.5dp each = 3dp apart, same as cards
   ctx.fillStyle=C.clay;ctx.beginPath();circlePath(fx-off,fy-off,26,s,a,true);ctx.fill();
   ink(t=>circlePath(fx+off,fy+off,26,t,a,false),70,C.ink,P.width);
   ink(t=>{trace(pts(fx-10+off,fy+off,fx+10+off,fy+off,t,a*.6,true));trace(pts(fx+off,fy-10+off,fx+off,fy+10+off,t+1,a*.6,true))},71,C.ink,P.width)}
