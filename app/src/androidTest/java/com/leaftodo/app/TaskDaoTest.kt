@@ -26,6 +26,36 @@ class TaskDaoTest {
         assertEquals(5, result.size)
         assertEquals((listOf(first, last) + middle).toSet(), result.map { it.id }.toSet())
     }
+    @Test fun replacePreservesIdsAndSequence() = runBlocking {
+        val dao = db.taskDao()
+        repeat(3) { dao.insert(newListTask("原来的$it", now)) }
+        val tasks = listOf(newListTask("十",now).copy(id=10), newListTask("二十",now).copy(id=20))
+        db.replaceAllTasks(tasks)
+        assertEquals(tasks,dao.getAll())
+        assertTrue(dao.insert(newListTask("新建",now)) > 20)
+    }
+    @Test fun replaceWithEmpty() = runBlocking {
+        db.taskDao().insert(newListTask("原来的",now))
+        db.replaceAllTasks(emptyList())
+        assertEquals(0,db.taskDao().count())
+    }
+    @Test fun allSortedAndCounted() = runBlocking {
+        val tasks=listOf(30L,10L,20L).map { newListTask("$it",now).copy(id=it) }
+        db.taskDao().insertAll(tasks)
+        assertEquals(tasks.sortedBy { it.id },db.taskDao().getAll())
+        assertEquals(3,db.taskDao().count())
+    }
+    @Test fun failedReplaceRollsBack() = runBlocking {
+        val dao=db.taskDao()
+        val id=dao.insert(newListTask("保留",now))
+        val original=dao.getAll()
+        try {
+            db.replaceAllTasks(listOf(newListTask("冲突1",now).copy(id=10),newListTask("冲突2",now).copy(id=10)))
+            fail("应因编号重复而失败")
+        } catch (_: android.database.sqlite.SQLiteConstraintException) { }
+        assertEquals(original,dao.getAll())
+        assertNotNull(dao.getById(id))
+    }
     private lateinit var db: LeafDatabase
     private val now = Instant.parse("2026-11-01T09:00:00Z")
     @Before fun setup() { db = Room.inMemoryDatabaseBuilder(InstrumentationRegistry.getInstrumentation().targetContext, LeafDatabase::class.java).build() }

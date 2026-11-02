@@ -36,6 +36,10 @@ class TaskConverters {
 
 @Dao
 interface TaskDao {
+    @Query("SELECT * FROM tasks ORDER BY id") suspend fun getAll(): List<Task>
+    @Query("SELECT COUNT(*) FROM tasks") suspend fun count(): Int
+    @Query("DELETE FROM tasks") suspend fun deleteAll()
+    @Insert(onConflict = OnConflictStrategy.ABORT) suspend fun insertAll(tasks: List<Task>)
     @Query("SELECT * FROM tasks WHERE date IS NULL") fun observeListTasks(): Flow<List<Task>>
     @Query("SELECT * FROM tasks WHERE date = :date") fun observeTasksOn(date: LocalDate): Flow<List<Task>>
     @Query("SELECT * FROM tasks WHERE status = 'OPEN' AND date BETWEEN :from AND :to")
@@ -58,5 +62,12 @@ abstract class LeafDatabase : RoomDatabase() {
             instance ?: Room.databaseBuilder(context.applicationContext, LeafDatabase::class.java, "leaf.db")
                 .build().also { instance = it }
         }
+    }
+}
+
+suspend fun LeafDatabase.replaceAllTasks(tasks: List<Task>) {
+    withTransaction {
+        taskDao().deleteAll()
+        taskDao().insertAll(tasks)
     }
 }
