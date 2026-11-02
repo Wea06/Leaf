@@ -27,8 +27,12 @@ fun Task.sameContent(title: String, note: String, date: LocalDate?, time: LocalT
 
 enum class TaskPage { TODAY, LIST, CALENDAR }
 
-fun defaultDateFor(page: TaskPage, today: LocalDate): LocalDate? =
-    if (page == TaskPage.TODAY) today else null
+fun defaultDateFor(page: TaskPage, today: LocalDate, calendarSelected: LocalDate?): LocalDate? =
+    when (page) {
+        TaskPage.TODAY -> today
+        TaskPage.LIST -> null
+        TaskPage.CALENDAR -> calendarSelected
+    }
 
 fun splitToday(tasks: List<Task>): TaskGroups = TaskGroups(
     tasks.filter { it.status == TaskStatus.OPEN }

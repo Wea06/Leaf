@@ -40,6 +40,8 @@ interface TaskDao {
     @Query("SELECT * FROM tasks WHERE date = :date") fun observeTasksOn(date: LocalDate): Flow<List<Task>>
     @Query("SELECT * FROM tasks WHERE status = 'OPEN' AND date BETWEEN :from AND :to")
     fun observeOpenBetween(from: LocalDate, to: LocalDate): Flow<List<Task>>
+    @Query("SELECT * FROM tasks WHERE date BETWEEN :from AND :to")
+    fun observeBetween(from: LocalDate, to: LocalDate): Flow<List<Task>>
     @Delete suspend fun delete(task: Task)
     @Insert suspend fun insert(task: Task): Long
     @Update suspend fun update(task: Task)

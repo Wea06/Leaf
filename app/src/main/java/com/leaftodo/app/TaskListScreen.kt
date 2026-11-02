@@ -63,19 +63,20 @@ fun TaskList(
     }
 }
 
-private fun LazyListScope.taskCards(
+internal fun LazyListScope.taskCards(
     tasks: List<Task>, today: LocalDate, showCreatedDate: Boolean,
     onToggle: (Task) -> Unit, onDrop: (Task) -> Unit,
     onReopen: (Task) -> Unit, onEdit: (Task) -> Unit, topGap: Boolean = false,
+    dimmed: (Task) -> Boolean = { false },
 ) {
     itemsIndexed(tasks, key = { _, task -> task.id }) { index, task ->
         if (index > 0 || topGap) Spacer(Modifier.height(20.dp))
-        TaskCard(task, today, showCreatedDate, onToggle, onDrop, onReopen, onEdit)
+        TaskCard(task, today, showCreatedDate, onToggle, onDrop, onReopen, onEdit, dimmed(task))
     }
 }
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun TaskCard(task: Task, today: LocalDate, showCreatedDate: Boolean, onToggle: (Task) -> Unit, onDrop: (Task) -> Unit, onReopen: (Task) -> Unit, onEdit: (Task) -> Unit) {
+internal fun TaskCard(task: Task, today: LocalDate, showCreatedDate: Boolean, onToggle: (Task) -> Unit, onDrop: (Task) -> Unit, onReopen: (Task) -> Unit, onEdit: (Task) -> Unit, dimmed: Boolean = false) {
     var menu by remember { mutableStateOf(false) }
     Box {
         Row(Modifier.fillMaxWidth().heightIn(min = 60.dp)
@@ -91,7 +92,7 @@ private fun TaskCard(task: Task, today: LocalDate, showCreatedDate: Boolean, onT
             }
             Spacer(Modifier.width(20.dp))
             Column(Modifier.weight(1f)) {
-                Text(task.title, color = if (task.status == TaskStatus.OPEN) ink else soft,
+                Text(task.title, color = if (task.status == TaskStatus.OPEN && !dimmed) ink else soft,
                     textDecoration = if (task.status == TaskStatus.DROPPED) TextDecoration.LineThrough else null,
                     style = MaterialTheme.typography.bodyLarge)
                 if (showCreatedDate || task.time != null || task.note.isNotEmpty()) {

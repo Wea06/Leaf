@@ -10,6 +10,22 @@ import org.junit.*
 import org.junit.Assert.*
 
 class TaskDaoTest {
+    @Test fun betweenIncludesBoundariesAndAllStatuses() = runBlocking {
+        val dao = db.taskDao()
+        val from = LocalDate.of(2026, 11, 1)
+        val to = LocalDate.of(2026, 11, 30)
+        dao.insert(newTask("之前", "", from.minusDays(1), null, now))
+        val first = dao.insert(newTask("月初", "", from, null, now))
+        val middle = TaskStatus.entries.map { status ->
+            dao.insert(newTask("月中", "", LocalDate.of(2026, 11, 15), null, now).withStatus(status, now))
+        }
+        val last = dao.insert(newTask("月末", "", to, null, now))
+        dao.insert(newTask("之后", "", to.plusDays(1), null, now))
+        dao.insert(newListTask("无日期", now))
+        val result = dao.observeBetween(from, to).first()
+        assertEquals(5, result.size)
+        assertEquals((listOf(first, last) + middle).toSet(), result.map { it.id }.toSet())
+    }
     private lateinit var db: LeafDatabase
     private val now = Instant.parse("2026-11-01T09:00:00Z")
     @Before fun setup() { db = Room.inMemoryDatabaseBuilder(InstrumentationRegistry.getInstrumentation().targetContext, LeafDatabase::class.java).build() }

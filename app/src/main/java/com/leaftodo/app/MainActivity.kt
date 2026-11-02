@@ -53,6 +53,7 @@ private fun LeafApp() {
     val today by model.today.collectAsStateWithLifecycle()
     val todayTasks by model.todayTasks.collectAsStateWithLifecycle()
     val recentTasks by model.recentTasks.collectAsStateWithLifecycle()
+    val calendarSelected by model.calendarSelected.collectAsStateWithLifecycle()
     var todayExpanded by rememberSaveable { mutableStateOf(false) }
     var listExpanded by rememberSaveable { mutableStateOf(false) }
     val snackbarHost = remember { SnackbarHostState() }
@@ -95,6 +96,11 @@ private fun LeafApp() {
         Box(Modifier.weight(1f).fillMaxWidth()) {
             Column(Modifier.padding(horizontal = 34.dp, vertical = 32.dp)) {
                 Text(pages[selected], style = MaterialTheme.typography.headlineLarge)
+                if (selected == 2) {
+                    Spacer(Modifier.height(20.dp))
+                    CalendarScreen(model, today, calendarSelected,
+                        onEdit = { dismissSnackbar(); editingId = it.id; editing = true })
+                }
                 if (selected == 1) {
                     Spacer(Modifier.height(20.dp))
                     TaskList(splitList(tasks), "还没有事，点右下角 ＋ 记一条", today,
@@ -118,7 +124,7 @@ private fun LeafApp() {
                 onClick = {
                     dismissSnackbar()
                     editingId = null
-                    defaultDate = defaultDateFor(TaskPage.entries[selected], today)?.toString()
+                    defaultDate = defaultDateFor(TaskPage.entries[selected], today, calendarSelected)?.toString()
                     editing = true
                 },
                 modifier = Modifier.align(Alignment.BottomEnd).padding(end = 42.dp, bottom = 42.dp)
