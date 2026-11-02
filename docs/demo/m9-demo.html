@@ -55,8 +55,9 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--clay);outline-o
           <button type="button" data-k="shadow" data-v="soft" aria-pressed="false">柔和模糊</button>
           <button type="button" data-k="shadow" data-v="none" aria-pressed="false">无阴影</button>
         </div>
-        <div class="row"><label for="shOff">阴影错开 <output id="shOffO"></output></label><input id="shOff" type="range" min="2" max="8" step="0.5" value="4"></div>
-        <div class="row"><label for="shDepth">阴影深浅 <output id="shDepthO"></output></label><input id="shDepth" type="range" min="5" max="30" step="1" value="14"><small>阴影是墨黑加透明度，叠在底色上就是“比底色深一点”的平涂色块。</small></div>
+        <label class="check"><input id="preview" type="checkbox"> 定住看阴影（第一张卡片停在“沉下去”的样子，拖下面两个滑块能直接看到变化）</label>
+        <div class="row"><label for="shOff">阴影错开 <output id="shOffO"></output></label><input id="shOff" type="range" min="1" max="10" step="0.5" value="6"></div>
+        <div class="row"><label for="shDepth">阴影深浅 <output id="shDepthO"></output></label><input id="shDepth" type="range" min="5" max="50" step="1" value="24"><small>“错开”是阴影从卡片右下方露出来多少；“深浅”是那块阴影有多黑。阴影只在卡片移动的那半秒出现，停下就没了。</small></div>
         <div class="row"><label for="sinkMs">整段时长 <output id="sinkMsO"></output></label><input id="sinkMs" type="range" min="400" max="1400" step="50" value="700"><small>前 20% 沉下去，中间 60% 滑过去，最后 20% 浮上来。打勾动画（约 0.3 秒）播完才开始沉。</small></div>
         <span class="hint">已结束的事</span>
         <div class="seg" role="group" aria-label="已结束">
@@ -100,7 +101,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--clay);outline-o
 const $=id=>document.getElementById(id);
 const cv=$('c'),ctx=cv.getContext('2d');
 const LW=360,LH=800;let S=1;
-const P={fps:8,amp:.8,step:12,frames:3,width:3.4,boil:true,shadow:'flat',shOff:4,shDepth:14,sinkMs:700,fold:true,stepMode:false,slideMs:300,marks:'A',paper:'fiber'};
+const P={fps:8,amp:.8,step:12,frames:3,width:3.4,boil:true,shadow:'flat',shOff:6,shDepth:24,sinkMs:700,fold:true,preview:false,stepMode:false,slideMs:300,marks:'A',paper:'fiber'};
 const C={bg:'#E3D9CD',card:'#FAF6F0',ink:'#1C1A17',soft:'#76695C',clay:'#D97757',clayText:'#B4573A',peach:'#F1D7C8',rule:'#CDBFAF'};
 const FONT='"Newsreader","LXGW WenKai TC","KaiTi","STKaiti",serif';
 let frame=0;
@@ -241,7 +242,7 @@ function drawCard(t,y,page,h,live,depth,alpha){
   const x=CARD_X,w=CARD_W,a=P.amp,lw=P.width,off=3,id=t.id;
   ctx.save();ctx.globalAlpha=alpha;
   if(depth>0){const sc=1-.05*depth;ctx.translate(x+w/2,y+h/2);ctx.scale(sc,sc);ctx.translate(-(x+w/2),-(y+h/2))}
-  if(depth>0&&P.shadow==='flat'){const o=P.shOff*depth;blob(x+o+off*.5,y+o+off*.5,w,h,id+500,`rgba(28,26,23,${P.shDepth/100})`,a*.8)}
+  if(depth>0&&P.shadow==='flat'){const o=off+P.shOff*depth;blob(x+o,y+o,w,h,id+500,`rgba(28,26,23,${P.shDepth/100*depth})`,a*.8)}// sits outside the ink outline (which is already 3dp down-right)
   if(depth>0&&P.shadow==='soft'){ctx.save();ctx.shadowColor=`rgba(28,26,23,${.28*depth})`;ctx.shadowBlur=16*depth;ctx.shadowOffsetY=5*depth;blob(x,y,w,h,id,C.card,a*.8);ctx.restore()}
   else blob(x,y,w,h,id,C.card,a*.8);
   ink(rectLines(x+off,y+off,w,h,a),id+20,C.ink,lw*.7);
@@ -277,7 +278,7 @@ function drawCards(page,live){
     const y=mv.from+(mv.to-mv.from)*ease(clamp((p-.2)/.6));
     const alpha=m.vanish&&p>.8?1-(p-.8)/.2:1;
     if(L.cards.has(t.id)||m.vanish&&p<1)drawCard(t,y,page,L.h,false,depth,alpha)}
-  for(const t of L.list){if(m&&t.id===m.sinker)continue;drawCard(t,cardY(page,t.id,L.cards.get(t.id)),page,L.h,live&&!m,0,1)}
+  L.list.forEach((t,i)=>{if(m&&t.id===m.sinker)return;const still=P.preview&&!m&&i===0;drawCard(t,cardY(page,t.id,L.cards.get(t.id)),page,L.h,live&&!m,still?1:0,1)});
   if(L.fold){let fy=L.fold.y;if(m&&m.fold){fy=m.fold.from+(m.fold.to-m.fold.from)*ease(m.fold.late?clamp((p-.8)/.2):clamp((p-.2)/.6))}
     text(`已结束 ${L.fold.count} 条 · ${P.fold?'展开':'收起'}`,CARD_X,fy+26,13,C.soft);
     if(live&&!m)hits.push({x:CARD_X,y:fy,w:CARD_W,h:44,tap:()=>{setFold(!P.fold)}});}
@@ -422,6 +423,7 @@ document.querySelectorAll('[data-k]').forEach(b=>b.addEventListener('click',()=>
 const sliders={shOff:v=>v+' dp',shDepth:v=>v+'%',sinkMs:v=>v+' ms',slideMs:v=>v+' ms'};
 for(const k in sliders){const el=$(k);const out=$(k+'O');const upd=()=>{P[k]=+el.value;out.value=sliders[k](el.value);draw()};el.addEventListener('input',upd);out.value=sliders[k](el.value);P[k]=+el.value}
 $('boil').addEventListener('change',e=>{P.boil=e.target.checked;draw()});
+$('preview').addEventListener('change',e=>{P.preview=e.target.checked;draw()});
 addEventListener('resize',layoutCanvas);
 layoutCanvas();document.fonts&&document.fonts.ready.then(draw);
 </script>
