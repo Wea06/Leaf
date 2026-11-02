@@ -10,6 +10,18 @@ import org.junit.*
 import org.junit.Assert.*
 
 class TaskDaoTest {
+    @Test fun reviewQueryIncludesAllStatusesOnlyOnChosenDay() = runBlocking {
+        val dao = db.taskDao()
+        val day = LocalDate.of(2026, 11, 2)
+        val ids = TaskStatus.entries.map { status ->
+            dao.insert(newTask(status.name, "", day, null, now).withStatus(status, now))
+        }
+        dao.insert(newTask("别的日期", "", day.minusDays(1), null, now))
+        dao.insert(newListTask("清单", now))
+        assertEquals(ids.toSet(), dao.getTasksOn(day).map { it.id }.toSet())
+        assertTrue(dao.getTasksOn(day.plusDays(1)).isEmpty())
+    }
+
     @Test fun reminderCandidatesRequireOpenDateAndTime() = runBlocking {
         val dao = db.taskDao()
         val dated = newTask("有时间", "", LocalDate.of(2026, 11, 2), LocalTime.of(15, 0), now)

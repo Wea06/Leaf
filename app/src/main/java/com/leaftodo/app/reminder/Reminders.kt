@@ -165,10 +165,8 @@ class ReminderSystemReceiver : BroadcastReceiver() {
         if (intent.action !in setOf(Intent.ACTION_BOOT_COMPLETED, Intent.ACTION_MY_PACKAGE_REPLACED,
                 Intent.ACTION_TIME_CHANGED, Intent.ACTION_TIMEZONE_CHANGED, AlarmManager.ACTION_SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED)) return
         runReminder {
-            supervisorScope {
-                launch { Reminders.sync(context.applicationContext) }
-                launch { NightlyReview.sync(context.applicationContext) }
-            }
+            try { Reminders.sync(context.applicationContext) }
+            finally { NightlyReview.sync(context.applicationContext) }
         }
     }
 }
