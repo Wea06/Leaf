@@ -89,7 +89,9 @@ class MainActivity : ComponentActivity() {
             val boil by LeafSettings.get(this).boilEnabled.collectAsState()
             BoilClock(boil) {
                 Box(Modifier.fillMaxSize()) {
-                    LeafApp(openTodayRequests)
+                    Box(Modifier.fillMaxSize().clipToStaticFrame()) {
+                        LeafApp(openTodayRequests)
+                    }
                     StaticFrame(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.systemBars.union(WindowInsets.displayCutout)).padding(12.dp))
                     PaperOverlay(effect)
                 }
