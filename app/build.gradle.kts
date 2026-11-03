@@ -27,9 +27,11 @@ android {
             applicationIdSuffix = ".debug"
         }
         release {
+            // v0.1.0 真机实测：开了 R8（只压 androidx/kotlin/kotlinx）后一启动就闪退
+            // （IllegalAccessError：App 里的类继承了被改成包内可见的 kotlin.collections 类）。
+            // 自用 App 不需要压缩，先关掉，正式版和开发版跑的代码保持一致。
             optimization {
-                enable = true
-                packageScope = setOf("androidx.**", "kotlin.**", "kotlinx.**")
+                enable = false
             }
         }
     }
