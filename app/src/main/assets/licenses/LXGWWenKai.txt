@@ -1,3 +1,6 @@
+Leaf 打包的是霞鹜文楷 Regular / Medium 的常用字子集（tools/fonts/subset_kai.py 生成）。
+按下面许可第 3 条，修改版不使用保留字体名，字体内部名改为 “Leaf Kai”。原字体：https://github.com/lxgw/LxgwWenKai
+
 Copyright 2021-2026 LXGW (https://github.com/lxgw/LxgwWenKai), with Reserved Font Name '霞鹜', '霞鶩', '落霞孤鹜', '落霞孤鶩' and 'LXGW'.
 Copyright 2020 The Klee Project Authors (https://github.com/fontworks-fonts/Klee)
 

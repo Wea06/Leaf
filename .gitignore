@@ -40,3 +40,6 @@ google-services.json
 
 /build/
 /app/build/
+
+# 字体裁剪时从 git 历史取出的完整版文楷（25MB），不提交
+tools/fonts/src/
