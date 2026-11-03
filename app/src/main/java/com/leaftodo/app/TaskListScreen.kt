@@ -94,6 +94,7 @@ internal fun TaskCard(task: Task, today: LocalDate, showCreatedDate: Boolean, on
     fun drop() { actions?.start(task.id,TaskStatus.DROPPED,animations); onDrop(task) }
     val source = remember { MutableInteractionSource() }
     val pressed by source.collectIsPressedAsState()
+    val hasSubtitle = showCreatedDate || task.time != null || task.note.isNotEmpty()
     Box {
         Row(Modifier.fillMaxWidth().heightIn(min = 60.dp)
             .sketchCard(fill=if(pressed) clayTint else card,seed=task.id.toInt())
@@ -101,10 +102,11 @@ internal fun TaskCard(task: Task, today: LocalDate, showCreatedDate: Boolean, on
             .padding(start = 4.dp, end = 18.dp, top = 6.dp, bottom = 6.dp), verticalAlignment = Alignment.CenterVertically) {
             SketchCheckbox(task.status,task.time!=null,task.id.toInt(),progress) { toggle() }
             Spacer(Modifier.width(6.dp))
-            Column(Modifier.weight(1f)) {
+            // Balance the visible two-line text, including the font's space below its glyphs.
+            Column(Modifier.weight(1f).offset(y = if (hasSubtitle) 4.dp else 0.dp)) {
                 SketchStrike(task.title, if(task.status==TaskStatus.OPEN && !dimmed) ink else soft,
                     task.status==TaskStatus.DROPPED,task.id.toInt()+90,progress)
-                if (showCreatedDate || task.time != null || task.note.isNotEmpty()) {
+                if (hasSubtitle) {
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                         if (showCreatedDate) Text("记于 " + formatDate(task.createdDate(ZoneId.systemDefault()), today),
                             color = soft, fontSize = 13.sp, maxLines = 1)
