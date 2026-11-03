@@ -2,6 +2,8 @@ package com.leaftodo.app
 
 import com.leaftodo.app.ui.sketch.*
 
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -44,95 +46,116 @@ import java.time.YearMonth
 fun CalendarScreen(model: TaskListViewModel, today: LocalDate, selected: LocalDate, onEdit: (Task) -> Unit) {
     val tasks by model.monthTasks.collectAsStateWithLifecycle()
     val month = YearMonth.from(selected)
-    val marks = remember(tasks, month, today) { calendarMarks(tasks, month, today) }
-    val grid = remember(month) { monthGrid(month) }
-    val selectedTasks = remember(tasks, selected) { dayTasks(tasks, selected) }
+
     var monthPicker by rememberSaveable { mutableStateOf(false) }
     if (monthPicker) CalendarMonthPicker(month, onDismiss = { monthPicker = false }) {
         model.selectMonth(it)
         monthPicker = false
     }
-    val scroll = androidx.compose.foundation.lazy.rememberLazyListState()
-    PauseBoilWhileScrolling(scroll)
-    LazyColumn(state = scroll, contentPadding = PaddingValues(bottom = 120.dp)) {
-        item(key = "month") {
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                MonthArrow(previous = true) { model.flipMonth(-1) }
-                Text(formatMonth(month), color = ink, style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.weight(1f).clip(RoundedCornerShape(12.dp))
-                        .clickable(onClickLabel = "选择年月") { monthPicker = true }
-                        .padding(vertical = 9.dp), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
-                MonthArrow(previous = false) { model.flipMonth(1) }
-            }
-            Spacer(Modifier.height(16.dp))
+    // Each departing month owns its data snapshot, including jumps beyond the query window.
+    val snapshots = remember { mutableMapOf<YearMonth, List<Task>>() }
+    snapshots[month] = tasks.toList()
+    // Only retain a small history for interrupted transitions.
+    while (snapshots.size > 4) snapshots.remove(snapshots.keys.first { it != month })
+    AnimatedContent(targetState = selected, contentKey = { YearMonth.from(it) },
+        transitionSpec = {
+            val direction = monthDirection(YearMonth.from(initialState), YearMonth.from(targetState))
+            (slideInHorizontally(tween(300, easing = FastOutSlowInEasing)) { it * direction } togetherWith
+                slideOutHorizontally(tween(300, easing = FastOutSlowInEasing)) { -it * direction })
+            .using(SizeTransform(clip = false))
+        }, label = "翻月") { shownDate ->
+            val scroll = rememberLazyListState()
+            PauseBoilWhileScrolling(scroll)
+            val shownMonth = YearMonth.from(shownDate)
+            val shownTasks = if (shownMonth == month) tasks else snapshots[shownMonth].orEmpty()
+            val marks = remember(shownTasks, shownMonth, today) { calendarMarks(shownTasks, shownMonth, today) }
+            val grid = remember(shownMonth) { monthGrid(shownMonth) }
+            val actions = LocalDrawingActions.current
+        val selectedTasks = dayTasks(actions?.project(shownTasks) ?: shownTasks, shownDate)
+        val motion = actions?.motion
+        LaunchedEffect(motion, motion?.stage) {
+            if (motion != null) scroll.requestScrollToItem(scroll.firstVisibleItemIndex, scroll.firstVisibleItemScrollOffset)
         }
-        item(key = "grid") {
-            Column(Modifier.fillMaxWidth().pointerInput(model) {
-                val threshold = 56.dp.toPx()
-                var dragged = 0f
-                var flipped = false
-                detectHorizontalDragGestures(
-                    onDragStart = { dragged = 0f; flipped = false },
-                    onHorizontalDrag = { change, amount ->
-                        change.consume()
-                        dragged += amount
-                        if (!flipped && kotlin.math.abs(dragged) > threshold) {
-                            model.flipMonth(if (dragged < 0) 1 else -1)
-                            flipped = true
-                        }
-                    },
-                )
-            }) {
-                Row {
-                    listOf("一", "二", "三", "四", "五", "六", "日").forEach {
-                        Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
-                            Text(it, color = soft, fontSize = 13.sp)
-                        }
+            LazyColumn(state = scroll, contentPadding = PaddingValues(bottom = 120.dp)) {
+                item(key = "month") {
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        MonthArrow(previous = true) { model.flipMonth(-1) }
+                        Text(formatMonth(shownMonth), color = ink, style = MaterialTheme.typography.titleMedium,
+                            modifier = Modifier.weight(1f).clip(RoundedCornerShape(12.dp))
+                            .clickable(onClickLabel = "选择年月") { monthPicker = true }
+                            .padding(vertical = 9.dp), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                        MonthArrow(previous = false) { model.flipMonth(1) }
                     }
+                    Spacer(Modifier.height(16.dp))
                 }
-                Spacer(Modifier.height(4.dp))
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    grid.chunked(7).forEach { week ->
+                item(key = "grid") {
+                    Column(Modifier.fillMaxWidth().pointerInput(model) {
+                        val threshold = 56.dp.toPx()
+                        var dragged = 0f
+                        var flipped = false
+                        detectHorizontalDragGestures(
+                            onDragStart = { dragged = 0f; flipped = false },
+                            onHorizontalDrag = { change, amount ->
+                                change.consume()
+                                dragged += amount
+                                if (!flipped && kotlin.math.abs(dragged) > threshold) {
+                                    model.flipMonth(if (dragged < 0) 1 else -1)
+                                    flipped = true
+                                }
+                            },
+                        )
+                    }) {
                         Row {
-                            week.forEach { date ->
-                                if (date == null) Spacer(Modifier.weight(1f).height(52.dp))
-                                else CalendarDay(date, today, marks.getValue(date), selected == date,
-                                    Modifier.weight(1f)) { model.selectDay(date) }
+                            listOf("一", "二", "三", "四", "五", "六", "日").forEach {
+                                Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
+                                    Text(it, color = soft, fontSize = 13.sp)
+                                }
+                            }
+                        }
+                        Spacer(Modifier.height(4.dp))
+                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            grid.chunked(7).forEach { week ->
+                                Row {
+                                    week.forEach { date ->
+                                        if (date == null) Spacer(Modifier.weight(1f).height(52.dp))
+                                        else CalendarDay(date, today, marks.getValue(date), shownDate == date,
+                                            Modifier.weight(1f)) { model.selectDay(date) }
+                                    }
+                                }
                             }
                         }
                     }
                 }
-            }
-        }
-        item(key = "legend") {
-            Spacer(Modifier.height(16.dp))
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                listOf(DayMark.TODAY, DayMark.ALL_CLOSED, DayMark.OPEN_RECENT, DayMark.OPEN_STALE, DayMark.UPCOMING).forEach { mark ->
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                        if (mark == DayMark.TODAY) Box(Modifier.size(14.dp).sketchFill(clayTint,1700))
-                        else MarkDot(mark)
-                        Text(mark.label(), color = soft, fontSize = 13.sp)
+                item(key = "legend") {
+                    Spacer(Modifier.height(16.dp))
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        listOf(DayMark.TODAY, DayMark.ALL_CLOSED, DayMark.OPEN_RECENT, DayMark.OPEN_STALE, DayMark.UPCOMING).forEach { mark ->
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                if (mark == DayMark.TODAY) Box(Modifier.size(14.dp).sketchFill(clayTint,1700))
+                                else MarkDot(mark)
+                                Text(mark.label(), color = soft, fontSize = 13.sp)
+                            }
+                        }
                     }
                 }
-            }
-        }
-        item(key = "selected-date") {
-            Spacer(Modifier.height(32.dp))
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Text(formatDate(selected, today), color = ink, style = MaterialTheme.typography.bodyLarge,
-                    modifier = Modifier.weight(1f))
-                if (selected != today) Box(Modifier.heightIn(min = 48.dp).clip(RoundedCornerShape(12.dp))
-                    .clickable { model.backToToday() }.padding(horizontal = 8.dp), contentAlignment = Alignment.Center) {
-                    Text("回到今天", color = soft, fontSize = 13.sp)
+                item(key = "selected-date") {
+                    Spacer(Modifier.height(32.dp))
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        Text(formatDate(shownDate, today), color = ink, style = MaterialTheme.typography.bodyLarge,
+                            modifier = Modifier.weight(1f))
+                        if (shownDate != today) Box(Modifier.heightIn(min = 48.dp).clip(RoundedCornerShape(12.dp))
+                            .clickable { model.backToToday() }.padding(horizontal = 8.dp), contentAlignment = Alignment.Center) {
+                                Text("回到今天", color = soft, fontSize = 13.sp)
+                            }
+                    }
+                    Spacer(Modifier.height(12.dp))
                 }
+                if (selectedTasks.isEmpty()) item(key = "empty") {
+                    Text("这天没有事，点右下角 ＋ 记一条", color = soft)
+                }
+                taskCards(selectedTasks, today, false, model::toggleDone, model::drop, model::reopen, onEdit,
+                    dimmed = { isStale(it, today) })
             }
-            Spacer(Modifier.height(12.dp))
-        }
-        if (selectedTasks.isEmpty()) item(key = "empty") {
-            Text("这天没有事，点右下角 ＋ 记一条", color = soft)
-        }
-        taskCards(selectedTasks, today, false, model::toggleDone, model::drop, model::reopen, onEdit,
-            dimmed = { isStale(it, today) })
     }
 }
 

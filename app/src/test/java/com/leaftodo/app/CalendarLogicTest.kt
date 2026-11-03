@@ -11,6 +11,12 @@ class CalendarLogicTest {
     private fun task(date: String?, status: TaskStatus = TaskStatus.OPEN): Task =
         newTask("事", "", date?.let(LocalDate::parse), null, now).withStatus(status, now)
 
+    @Test fun adjacentMonthsDoNotAffectMarks() {
+        val month = YearMonth.from(today)
+        val local = listOf(task("2026-11-05"))
+        val adjacent = listOf(task("2026-10-31"), task("2026-12-01", TaskStatus.DONE))
+        assertEquals(calendarMarks(local, month, today), calendarMarks(local + adjacent, month, today))
+    }
     @Test fun novemberGrid() {
         val grid = monthGrid(YearMonth.of(2026, 11))
         assertEquals(42, grid.size)
