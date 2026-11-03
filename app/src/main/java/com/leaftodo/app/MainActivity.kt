@@ -231,10 +231,15 @@ private fun LeafApp(openTodayRequests: Int) {
             // No Material ripple: pressing is shown by the hand-drawn block itself, in the same shape.
             val tabSources = remember { List(pages.size) { MutableInteractionSource() } }
             val tabPressed = tabSources.map { it.collectIsPressedAsState().value }
-            // Selected tab = clayTint block + offset ink frame, drawn like a card; it follows the pager while swiping.
+            // Selected tab = clayTint block + offset ink frame, drawn like a card but centred; it follows the pager while swiping.
             Box(Modifier.offset(x = (tabWidth + 12.dp) * (pagerState.currentPage + pagerState.currentPageOffsetFraction))
                 .width(tabWidth).height(72.dp).padding(horizontal = 18.dp, vertical = 13.dp)
-                .sketchCard(if (tabPressed[selected]) clayPress else clayTint, 2000))
+                .sketchDrawing(2000) { _, id ->
+                    // Block up-left and frame down-right by 1.5dp each (3dp apart, as on cards),
+                    // so the pair is centred on the label instead of drifting down-right.
+                    rect(-1.5f, -1.5f, w, h, id, if (tabPressed[selected]) clayPress else clayTint, amp = .64f, fill = true)
+                    rect(1.5f, 1.5f, w, h, id + 20)
+                })
             Row(Modifier.fillMaxWidth().selectableGroup(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 pages.forEachIndexed { index, label ->
                     Box(Modifier.weight(1f).height(72.dp)
