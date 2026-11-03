@@ -26,6 +26,8 @@ import androidx.activity.SystemBarStyle
 import androidx.compose.foundation.pager.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.selection.selectable
@@ -226,15 +228,27 @@ private fun LeafApp(openTodayRequests: Int) {
         }
         BoxWithConstraints(Modifier.fillMaxWidth().padding(start = 22.dp, end = 22.dp, bottom = 12.dp)) {
             val tabWidth = (maxWidth - 24.dp) / 3
+            // No Material ripple: pressing is shown by the hand-drawn block itself, in the same shape.
+            val tabSources = remember { List(pages.size) { MutableInteractionSource() } }
+            val tabPressed = tabSources.map { it.collectIsPressedAsState().value }
+            // Selected tab = clayTint block + offset ink frame, drawn like a card but centred; it follows the pager while swiping.
             Box(Modifier.offset(x = (tabWidth + 12.dp) * (pagerState.currentPage + pagerState.currentPageOffsetFraction))
-                .width(tabWidth).height(72.dp).padding(horizontal = 18.dp, vertical = 13.dp).sketchFill(clayTint, 2000))
+                .width(tabWidth).height(72.dp).padding(horizontal = 18.dp, vertical = 13.dp)
+                .sketchDrawing(2000) { _, id ->
+                    // Block up-left and frame down-right by 1.5dp each (3dp apart, as on cards),
+                    // so the pair is centred on the label instead of drifting down-right.
+                    rect(-1.5f, -1.5f, w, h, id, if (tabPressed[selected]) clayPress else clayTint, amp = .64f, fill = true)
+                    rect(1.5f, 1.5f, w, h, id + 20)
+                })
             Row(Modifier.fillMaxWidth().selectableGroup(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 pages.forEachIndexed { index, label ->
                     Box(Modifier.weight(1f).height(72.dp)
-                        .selectable(selected == index, role = Role.Tab, onClick = {
+                        .selectable(selected == index, interactionSource = tabSources[index], indication = null, role = Role.Tab, onClick = {
                             dismissSnackbar()
                             scope.launch { pagerState.animateScrollToPage(index, animationSpec = tween(300, easing = FastOutSlowInEasing)) }
                         }), contentAlignment = Alignment.Center) {
+                            if (tabPressed[index] && index != selected) Box(Modifier.matchParentSize()
+                                .padding(horizontal = 18.dp, vertical = 13.dp).sketchFill(clayTint.copy(alpha = .75f), 2100 + index))
                             Text(label, color = if (selected == index) ink else soft, style = MaterialTheme.typography.labelLarge)
                     }
                 }
