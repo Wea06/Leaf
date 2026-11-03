@@ -1,0 +1,197 @@
+<title>Leaf 图标方向</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,600&family=LXGW+WenKai+TC:wght@400;700&display=swap">
+<style>
+/* 单一浅色：和 App 一样只有浅色模式，演示页故意不跟随深色，免得误判配色。
+   版式：顶部一段说明，下面每个方向一张卡片，卡片里从大到小排同一枚图标。 */
+:root{
+  --bg:#E3D9CD; --card:#FAF6F0; --ink:#1C1A17; --clay:#D97757;
+  --clayText:#B4573A; --soft:#76695C; --rule:#CDBFAF; --tint:#F1D7C8;
+  --ui:"Newsreader","LXGW WenKai TC","Songti SC",serif;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--ui);font-size:16px;line-height:1.6;margin:0}
+.wrap{max-width:1120px;margin:0 auto;padding-block:36px 56px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1{font-size:30px;font-weight:700;margin:0 0 10px;text-wrap:balance}
+.lead{max-width:44em;color:var(--soft);margin:0 0 8px}
+.lead b{color:var(--ink);font-weight:700}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:22px;margin-top:28px}
+.card{background:var(--card);border:2px solid var(--ink);border-radius:14px;padding:20px 20px 18px;
+  box-shadow:3px 3px 0 0 var(--ink);display:flex;flex-direction:column;gap:14px;min-width:0}
+.head{display:flex;align-items:baseline;gap:10px}
+.tag{font-size:26px;font-weight:600;color:var(--clayText);font-family:"Newsreader",serif;line-height:1}
+.name{font-size:20px;font-weight:700}
+.idea{color:var(--soft);font-size:14.5px;margin:0}
+.hero{display:flex;gap:16px;align-items:center}
+.hero .big{width:148px;height:148px;flex:none}
+.masks{display:grid;grid-template-columns:repeat(2,64px);gap:10px 14px}
+.masks figure{margin:0;display:flex;flex-direction:column;align-items:center;gap:2px}
+.masks svg{width:58px;height:58px}
+figcaption{font-size:12px;color:var(--soft);white-space:nowrap}
+.homes{display:grid;grid-template-columns:1fr 1fr;gap:10px;min-width:0}
+.home{border-radius:10px;padding:12px 6px 8px;display:flex;justify-content:space-evenly;min-width:0}
+.home.light{background:#C7CDBF}
+.home.dark{background:#2C3138}
+.app{display:flex;flex-direction:column;align-items:center;gap:3px;width:52px}
+.app svg,.app i{width:46px;height:46px;display:block}
+.app i{border-radius:50%}
+.home.light .app i{background:#AEB5A6}
+.home.dark .app i{background:#454C55}
+.app span{font-size:11px;line-height:1;font-family:system-ui,sans-serif}
+.home.light span{color:#1F231C}.home.dark span{color:#EDEFF2}
+.foot{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.seed{font-size:13px;color:var(--soft);font-variant-numeric:tabular-nums}
+button{font:inherit;font-size:14px;background:transparent;color:var(--ink);border:1.6px solid var(--ink);
+  border-radius:999px;padding:3px 14px;cursor:pointer}
+button:hover{background:var(--tint)}
+button:focus-visible{outline:2px solid var(--clay);outline-offset:2px}
+.notes{margin-top:34px;max-width:46em;color:var(--soft);font-size:14.5px}
+.notes h2{font-size:18px;color:var(--ink);margin:0 0 6px}
+.notes ul{margin:0;padding-left:1.2em}
+@media (max-width:420px){
+  .hero .big{width:120px;height:120px}
+  .masks svg{width:50px;height:50px}
+  .homes{grid-template-columns:1fr}
+}
+</style>
+
+<div class="wrap">
+  <h1>Leaf 图标：五个方向</h1>
+  <p class="lead">每张卡片是同一枚图标在不同地方的样子。左边大图是圆形；右边四个小图是<b>不同手机会切出的形状</b>（小米、vivo、OPPO 各有各的，图标得在哪种形状里都好看），最后一个是<b>主题图标</b>：Android 13 起开了“主题图标”后，系统只用单色版，颜色跟着壁纸走。底下两条是放在桌面上的真实大小。</p>
+  <p class="lead">挑一个告诉我字母就行，也可以混搭，比如“A 的叶子配 B 的橙底”。觉得某一笔画得别扭，按“换一笔”，把笔迹号一起告诉我。</p>
+  <div class="grid" id="grid"></div>
+  <div class="notes">
+    <h2>说明</h2>
+    <ul>
+      <li>桌面图标不会抖，用的是固定的一笔（相当于 App 里抖动的第 0 帧）。</li>
+      <li>所有内容都在安全区里（中间 66dp 的圆），不管手机切成什么形状都不会被裁掉。</li>
+      <li>通知栏的小叶子图标已经有了，定稿后我会让它和新图标的叶子对上。</li>
+    </ul>
+  </div>
+</div>
+
+<script>
+const C={bg:'#E3D9CD',card:'#FAF6F0',ink:'#1C1A17',clay:'#D97757'};
+const THEMED={bg:'#D9E4D2',fg:'#2A3A25'};
+
+function rng(seed){let a=(seed*2654435761)>>>0;return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function cubic(p0,p1,p2,p3,n=48){const o=[];for(let i=0;i<=n;i++){const t=i/n,u=1-t,a=u*u*u,b=3*u*u*t,c=3*u*t*t,d=t*t*t;o.push([a*p0[0]+b*p1[0]+c*p2[0]+d*p3[0],a*p0[1]+b*p1[1]+c*p2[1]+d*p3[1]])}return o}
+function seg(a,b,n=16){const o=[];for(let i=0;i<=n;i++){const t=i/n;o.push([a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t])}return o}
+function join(...s){const o=[];s.forEach((p,i)=>o.push(...(i?p.slice(1):p)));return o}
+function resample(pts,step){const cum=[0];for(let i=1;i<pts.length;i++)cum.push(cum[i-1]+Math.hypot(pts[i][0]-pts[i-1][0],pts[i][1]-pts[i-1][1]));
+  const L=cum[cum.length-1],n=Math.max(2,Math.round(L/step)),o=[];let j=0;
+  for(let k=0;k<=n;k++){const d=L*k/n;while(j<cum.length-2&&cum[j+1]<d)j++;const t=(d-cum[j])/((cum[j+1]-cum[j])||1);
+    o.push([pts[j][0]+(pts[j+1][0]-pts[j][0])*t,pts[j][1]+(pts[j+1][1]-pts[j][1])*t])}return{pts:o,L}}
+// 低频晃动：每隔 knot 个单位取一个随机偏移，中间平滑插值，沿法线推开
+function roughen(src,{closed=false,amp=0.9,knot=9,seed=1}={}){
+  const {pts,L}=resample(src,0.7),r=rng(seed),nk=Math.max(2,Math.round(L/knot));
+  const ks=[];for(let i=0;i<=nk;i++)ks.push((r()*2-1)*amp);if(closed)ks[nk]=ks[0];
+  const n=pts.length,out=[];
+  for(let i=0;i<n;i++){
+    const f=i/(n-1)*nk,k=Math.min(nk-1,Math.floor(f)),t=f-k,s=(1-Math.cos(t*Math.PI))/2,off=ks[k]*(1-s)+ks[k+1]*s;
+    const a=pts[closed?(i-1+n-1)%(n-1):Math.max(0,i-1)],b=pts[closed?(i+1)%(n-1):Math.min(n-1,i+1)];
+    const dx=b[0]-a[0],dy=b[1]-a[1],l=Math.hypot(dx,dy)||1;
+    out.push([pts[i][0]-dy/l*off,pts[i][1]+dx/l*off])}
+  return out}
+const D=(p,closed)=>'M'+p.map(q=>q[0].toFixed(2)+' '+q[1].toFixed(2)).join('L')+(closed?'Z':'');
+
+// 局部坐标：x 沿叶轴，y 垂直；frame 把它放到 108 画布上
+function frame(origin,deg){const a=deg*Math.PI/180,dx=Math.cos(a),dy=Math.sin(a);
+  return pts=>pts.map(([x,y])=>[origin[0]+x*dx-y*dy,origin[1]+x*dy+y*dx])}
+function leafEdges(L,w){return{
+  up:cubic([0,0],[L*.22,-w*1.25],[L*.68,-w*1.05],[L,0]),
+  lo:cubic([L,0],[L*.74,w*1.1],[L*.25,w*1.22],[0,0])}}
+function centered(x0,x1){const m=(x0+x1)/2,dir=[Math.cos(-Math.PI/4),Math.sin(-Math.PI/4)];return[54-m*dir[0],54-m*dir[1]]}
+function roundRect(x0,y0,x1,y1,r){const k=r*.55;return join(
+  seg([x0+r,y0],[x1-r,y0]),cubic([x1-r,y0],[x1-r+k,y0],[x1,y0+r-k],[x1,y0+r],12),
+  seg([x1,y0+r],[x1,y1-r]),cubic([x1,y1-r],[x1,y1-r+k],[x1-r+k,y1],[x1-r,y1],12),
+  seg([x1-r,y1],[x0+r,y1]),cubic([x0+r,y1],[x0+r-k,y1],[x0,y1-r+k],[x0,y1-r],12),
+  seg([x0,y1-r],[x0,y0+r]),cubic([x0,y0+r],[x0,y0+r-k],[x0+r-k,y0],[x0+r,y0],12))}
+function circle(cx,cy,r){const o=[];for(let i=0;i<=72;i++){const a=i/72*Math.PI*2;o.push([cx+Math.cos(a)*r,cy+Math.sin(a)*r])}return o}
+
+const DIRS=[
+ {id:'A',name:'一片叶',idea:'最直白：橙色叶片色块垫底，墨线勾出叶形和叶脉，两者错开一点，和 App 里卡片同一个画法。',
+  build(){const L=50,w=16.5,T=frame(centered(-7,L),-45),e=leafEdges(L,w);
+   const out=join(e.up,e.lo),rib=cubic([-7,0],[L*.25,-1.2],[L*.55,-1.6],[L*.84,0]);
+   const veins=[seg([L*.30,-.8],[L*.46,-w*.62]),seg([L*.55,-1.2],[L*.68,-w*.48]),seg([L*.38,-.6],[L*.54,w*.6]),seg([L*.62,-.8],[L*.74,w*.42])];
+   return{bg:C.bg,fills:[{p:T(out),closed:true,color:C.clay}],
+     strokes:[{p:T(out),closed:true,w:4.2},{p:T(rib),w:3.8},...veins.map(v=>({p:T(v),w:2.6}))],
+     mono:{strokes:[{p:T(out),closed:true,w:4.8},{p:T(rib),w:4.4},...veins.map(v=>({p:T(v),w:3.2}))]}}}},
+ {id:'B',name:'叶脉是个勾',idea:'叶子的主脉画成打勾，一眼看出是“待办”。橙色铺满底色，米白叶片很跳，在桌面上最好找。',
+  build(){const L=54,w=18,T=frame(centered(-6,L),-45),e=leafEdges(L,w);
+   const out=join(e.up,e.lo),stem=seg([-6,0],[0,0]);
+   const chk=join(seg([L*.26-3,-9.5],[L*.30,2.6]),cubic([L*.30,2.6],[L*.45,1.6],[L*.65,.6],[L*.84,-.4],24));
+   return{bg:C.clay,fills:[{p:T(out),closed:true,color:C.card}],
+     strokes:[{p:T(out),closed:true,w:4.2},{p:T(stem),w:4.2},{p:T(chk),w:4.6}],
+     mono:{strokes:[{p:T(out),closed:true,w:4.8},{p:T(stem),w:4.8},{p:T(chk),w:5.2}]}}}},
+ {id:'C',name:'打完勾的复选框',idea:'就是 App 里打完勾的那个复选框：橙色块错位垫底，勾的末端长出一片小叶子。',
+  build(){const box=roundRect(29,39,67,77,9);
+   const chk=join(seg([37,57],[45.5,66.5]),cubic([45.5,66.5],[51,58],[57,50],[63,43.5],16));
+   const T=frame([63,43.5],-45),e=leafEdges(18,7.2),lf=join(e.up,e.lo);
+   return{bg:C.card,fills:[{p:roundRect(29,39,67,77,9),closed:true,color:C.clay},{p:T(lf),closed:true,color:C.ink,ink:true}],
+     strokes:[{p:box,closed:true,w:4.2},{p:chk,w:4.6},{p:T(lf),closed:true,w:2.2}],
+     mono:{fills:[{p:T(lf),closed:true}],strokes:[{p:box,closed:true,w:4.8},{p:chk,w:5.2},{p:T(lf),closed:true,w:2.6}]}}}},
+ {id:'D',name:'字母 L',idea:'App 标题用的 Newsreader 写一个 L，右上角一片橙色叶子当点缀。最安静，像书的封面。',
+  build(){const L=25,w=8.6,T=frame([59,51],-45),e=leafEdges(L,w),lf=join(e.up,e.lo);
+   const txt={x:47,y:81,size:66,text:'L'};
+   return{bg:C.bg,fills:[{p:T(lf),closed:true,color:C.clay}],strokes:[{p:T(lf),closed:true,w:2.6}],text:txt,
+     mono:{fills:[{p:T(lf),closed:true}],text:txt}}}},
+ {id:'E',name:'一笔画叶',idea:'深色底，一根米白线不抬笔画出叶子，后面一个橙色圆像太阳。在一屏亮色图标里最显眼。',
+  build(){const L=52,w=17,T=frame(centered(-8,L),-45),e=leafEdges(L,w);
+   const one=join(seg([-8,0],[0,0]),e.up,e.lo,cubic([0,0],[L*.25,-1],[L*.5,-1.4],[L*.76,0],24));
+   return{bg:C.ink,fills:[{p:circle(62,46,18),closed:true,color:C.clay}],
+     strokes:[{p:T(one),w:4.2,color:C.card}],
+     mono:{strokes:[{p:T(one),w:4.8}]}}}},
+];
+
+const MASKS={
+  circle:'<circle cx="54" cy="54" r="36"/>',
+  squircle:(()=>{let s='';for(let i=0;i<=96;i++){const a=i/96*Math.PI*2,c=Math.cos(a),n=Math.sin(a);s+=(i?'L':'M')+(54+36*Math.sign(c)*Math.abs(c)**.5).toFixed(2)+' '+(54+36*Math.sign(n)*Math.abs(n)**.5).toFixed(2)}return`<path d="${s}Z"/>`})(),
+  rounded:'<rect x="18" y="18" width="72" height="72" rx="16"/>',
+  square:'<rect x="18" y="18" width="72" height="72" rx="7"/>'
+};
+let uid=0;
+function render(dir,seed,mask='circle',mono=false){
+  const g=dir.build(),id='m'+(uid++),amp=0.95,parts=[];
+  const ink=mono?THEMED.fg:C.ink;
+  parts.push(`<rect x="0" y="0" width="108" height="108" fill="${mono?THEMED.bg:g.bg}"/>`);
+  const src=mono?g.mono:g;
+  (src.fills||[]).forEach((f,i)=>{
+    const p=roughen(f.p,{closed:f.closed,amp:amp*.8,seed:seed*31+i*7+3});
+    const off=mono||f.ink?0:-1.6;
+    parts.push(`<path d="${D(p,true)}" fill="${mono?THEMED.fg:f.color}" transform="translate(${off} ${off})"/>`)});
+  if(src.text){const t=src.text;parts.push(`<text x="${t.x+(mono?0:1.2)}" y="${t.y+(mono?0:1.2)}" font-family="Newsreader,serif" font-weight="600" font-size="${t.size}" text-anchor="middle" fill="${ink}">${t.text}</text>`)}
+  (src.strokes||[]).forEach((s,i)=>{
+    const col=mono?THEMED.fg:(s.color||C.ink),off=mono?0:1.4;
+    const a=roughen(s.p,{closed:s.closed,amp,seed:seed*31+i*13+1}),b=roughen(s.p,{closed:s.closed,amp,seed:seed*31+i*13+57});
+    parts.push(`<g transform="translate(${off} ${off})" fill="none" stroke="${col}" stroke-linecap="round" stroke-linejoin="round">`+
+      `<path d="${D(a,s.closed)}" stroke-width="${s.w}"/>`+
+      `<path d="${D(b,s.closed)}" stroke-width="${(s.w*.75).toFixed(2)}" transform="translate(.8 .55)"/></g>`)});
+  return`<svg viewBox="18 18 72 72" role="img" aria-label="方向 ${dir.id}"><defs><clipPath id="${id}">${MASKS[mask]}</clipPath></defs><g clip-path="url(#${id})">${parts.join('')}</g></svg>`;
+}
+const seeds={};
+function card(dir){
+  const s=seeds[dir.id]||1;
+  return`<div class="head"><span class="tag">${dir.id}</span><span class="name">${dir.name}</span></div>
+  <p class="idea">${dir.idea}</p>
+  <div class="hero"><div class="big">${render(dir,s,'circle')}</div>
+   <div class="masks">
+    <figure>${render(dir,s,'squircle')}<figcaption>方圆</figcaption></figure>
+    <figure>${render(dir,s,'rounded')}<figcaption>圆角方</figcaption></figure>
+    <figure>${render(dir,s,'square')}<figcaption>小圆角</figcaption></figure>
+    <figure>${render(dir,s,'circle',true)}<figcaption>主题图标</figcaption></figure>
+   </div></div>
+  <div class="homes">
+   <div class="home light"><div class="app"><i></i><span>相册</span></div><div class="app">${render(dir,s,'circle')}<span>Leaf</span></div></div>
+   <div class="home dark"><div class="app">${render(dir,s,'circle')}<span>Leaf</span></div><div class="app"><i></i><span>设置</span></div></div>
+  </div>
+  <div class="foot"><span class="seed">笔迹 ${dir.id}${s}</span><button type="button" id="re-${dir.id}" data-id="${dir.id}">换一笔</button></div>`;
+}
+const grid=document.getElementById('grid');
+DIRS.forEach(d=>{const el=document.createElement('div');el.className='card';el.id='card-'+d.id;el.innerHTML=card(d);grid.appendChild(el)});
+grid.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const d=DIRS.find(x=>x.id===b.dataset.id);
+  seeds[d.id]=(seeds[d.id]||1)+1;const el=document.getElementById('card-'+d.id);el.innerHTML=card(d);el.querySelector('button').focus()});
+</script>
