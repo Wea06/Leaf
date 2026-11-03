@@ -16,12 +16,16 @@ android {
         minSdk = 29
         targetSdk = 37
         versionCode = 1
-        versionName = "0.0.1"
+        versionName = "0.1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
+        debug {
+            // 开发版：独立包名，和自用的正式版并存，开发测试碰不到真数据
+            applicationIdSuffix = ".debug"
+        }
         release {
             optimization {
                 enable = true

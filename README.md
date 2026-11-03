@@ -2,6 +2,12 @@
 
 自用的纯本地 Android 待办 App，目前完成 M7 到点提醒；M1～M7 均已真机验收通过。
 
+## 开发版和正式版
+
+- **Leaf**（com.leaftodo.app，release）：用户自用，用自己的 keystore 签名，记真事。
+- **Leaf 开发版**（com.leaftodo.app.debug，debug，图标是方格底）：Android Studio ▶ 和所有真机测试只装它。两者数据互不影响。
+- 从 v0.1.0 起数据库结构冻结，改表必须写 Migration，见 AGENTS.md“自用阶段”。
+
 ## 本地运行
 
 1. Android Studio 打开本仓库根目录，等待 Gradle 同步。

@@ -1,0 +1,4 @@
+<resources>
+    <!-- 开发版的桌面名字，和正式版“Leaf”区分开 -->
+    <string name="app_name">Leaf 开发版</string>
+</resources>
