@@ -23,6 +23,8 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.SystemBarStyle
+import androidx.compose.foundation.pager.*
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -103,8 +105,9 @@ class MainActivity : ComponentActivity() {
 @Composable
 private fun LeafApp(openTodayRequests: Int) {
     val context = LocalContext.current
-    var selected by rememberSaveable { mutableIntStateOf(0) }
-    LaunchedEffect(openTodayRequests) { if (openTodayRequests > 0) selected = 0 }
+    val pagerState = rememberPagerState { 3 }
+    val selected = pagerState.currentPage
+    LaunchedEffect(openTodayRequests) { if (openTodayRequests > 0) pagerState.scrollToPage(0) }
     val model: TaskListViewModel = viewModel()
     val tasks by model.tasks.collectAsStateWithLifecycle()
     val today by model.today.collectAsStateWithLifecycle()
@@ -161,40 +164,45 @@ private fun LeafApp(openTodayRequests: Int) {
         Modifier.fillMaxSize().background(bg).windowInsetsPadding(WindowInsets.safeDrawing)
     ) {
         Box(Modifier.weight(1f).fillMaxWidth()) {
-            Column(Modifier.padding(horizontal = 34.dp, vertical = 32.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(pages[selected], Modifier.weight(1f), style = MaterialTheme.typography.headlineLarge)
-                    Box(Modifier.heightIn(min = 48.dp).clip(RoundedCornerShape(12.dp))
-                        .clickable { dismissSnackbar(); settingsOpen = true }.padding(horizontal = 12.dp),
-                        contentAlignment = Alignment.Center) {
-                        Text("设置", style = MaterialTheme.typography.bodyMedium, color = soft)
+            HorizontalPager(state = pagerState, beyondViewportPageCount = 1,
+                verticalAlignment = Alignment.Top, modifier = Modifier.fillMaxSize()) { page ->
+                DrawingPage(scrollState = pagerState) {
+                    Column(Modifier.fillMaxSize().padding(start = 34.dp, end = 34.dp, top = 32.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(pages[page], Modifier.weight(1f), style = MaterialTheme.typography.headlineLarge)
+                            Box(Modifier.heightIn(min = 48.dp).clip(RoundedCornerShape(12.dp))
+                                .clickable { dismissSnackbar(); settingsOpen = true }.padding(horizontal = 12.dp),
+                                contentAlignment = Alignment.Center) {
+                                    Text("设置", style = MaterialTheme.typography.bodyMedium, color = soft)
+                                }
+                        }
+                        if (page == 2) {
+                            Spacer(Modifier.height(20.dp))
+                            CalendarScreen(model, today, calendarSelected,
+                                onEdit = { dismissSnackbar(); editingId = it.id; editing = true })
+                        }
+                        if (page == 1) {
+                            Spacer(Modifier.height(20.dp))
+                            SectionedTaskList(sections, today,
+                                futureExpanded, { futureExpanded = it }, noDateExpanded, { noDateExpanded = it },
+                                overdueExpanded, { overdueExpanded = it }, olderExpanded, { olderExpanded = it },
+                                listExpanded, { listExpanded = it },
+                                onOverdueToggle = { recentClosed(it, false) }, onOverdueDrop = { recentClosed(it, true) },
+                                onToggle = model::toggleDone, onDrop = model::drop, onReopen = model::reopen,
+                                onEdit = { dismissSnackbar(); editingId = it.id; editing = true })
+                        }
+                        if (page == 0) {
+                            Spacer(Modifier.height(20.dp))
+                            Text(formatDate(today, today), style = MaterialTheme.typography.bodyLarge)
+                            Spacer(Modifier.height(20.dp))
+                            TaskList(splitToday(todayTasks), "今天还没有事，点右下角 ＋ 记一条", today,
+                                expanded = todayExpanded, onExpandedChange = { todayExpanded = it },
+                                sourceRecent = recentUnfinished(recentTasks, today),
+                                onRecentToggle = { recentClosed(it, false) }, onRecentDrop = { recentClosed(it, true) },
+                                onToggle = model::toggleDone, onDrop = model::drop, onReopen = model::reopen,
+                                onEdit = { dismissSnackbar(); editingId = it.id; editing = true })
+                        }
                     }
-                }
-                if (selected == 2) {
-                    Spacer(Modifier.height(20.dp))
-                    DrawingPage { CalendarScreen(model, today, calendarSelected,
-                        onEdit = { dismissSnackbar(); editingId = it.id; editing = true }) }
-                }
-                if (selected == 1) {
-                    Spacer(Modifier.height(20.dp))
-                    DrawingPage { SectionedTaskList(sections, today,
-                        futureExpanded, { futureExpanded = it }, noDateExpanded, { noDateExpanded = it },
-                        overdueExpanded, { overdueExpanded = it }, olderExpanded, { olderExpanded = it },
-                        listExpanded, { listExpanded = it },
-                        onOverdueToggle = { recentClosed(it, false) }, onOverdueDrop = { recentClosed(it, true) },
-                        onToggle = model::toggleDone, onDrop = model::drop, onReopen = model::reopen,
-                        onEdit = { dismissSnackbar(); editingId = it.id; editing = true }) }
-                }
-                if (selected == 0) {
-                    Spacer(Modifier.height(20.dp))
-                    Text(formatDate(today, today), style = MaterialTheme.typography.bodyLarge)
-                    Spacer(Modifier.height(20.dp))
-                    DrawingPage { TaskList(splitToday(todayTasks), "今天还没有事，点右下角 ＋ 记一条", today,
-                        expanded = todayExpanded, onExpandedChange = { todayExpanded = it },
-                        recent = recentUnfinished(recentTasks, today),
-                        onRecentToggle = { recentClosed(it, false) }, onRecentDrop = { recentClosed(it, true) },
-                        onToggle = model::toggleDone, onDrop = model::drop, onReopen = model::reopen,
-                        onEdit = { dismissSnackbar(); editingId = it.id; editing = true }) }
                 }
             }
             SketchFab(
@@ -204,37 +212,33 @@ private fun LeafApp(openTodayRequests: Int) {
                     defaultDate = defaultDateFor(TaskPage.entries[selected], today, calendarSelected)?.toString()
                     editing = true
                 },
-                modifier = Modifier.align(Alignment.BottomEnd).padding(end = 42.dp, bottom = 42.dp)
+                // The page viewport extends 12dp farther down; keep the floating controls in place.
+                modifier = Modifier.align(Alignment.BottomEnd).padding(end = 42.dp, bottom = 54.dp)
                     .size(56.dp).semantics { contentDescription = "新建一条事" }
             )
             SnackbarHost(snackbarHost, Modifier.align(Alignment.BottomCenter)
-                .padding(start = 34.dp, end = 34.dp, bottom = 114.dp)) { data ->
+                .padding(start = 34.dp, end = 34.dp, bottom = 126.dp)) { data ->
                 Row(Modifier.fillMaxWidth().sketchFill(ink,812).padding(horizontal=16.dp),verticalAlignment=Alignment.CenterVertically) {
                     Text(data.visuals.message,color=card,maxLines=1,overflow=TextOverflow.Ellipsis,modifier=Modifier.weight(1f))
                     TextButton(onClick={data.performAction()}) { Text("撤回",color=clay) }
                 }
             }
         }
-        Row(
-            Modifier.fillMaxWidth().selectableGroup().padding(horizontal = 22.dp, vertical = 12.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            pages.forEachIndexed { index, label ->
-                Box(
-                    Modifier.weight(1f).heightIn(min = 48.dp)
-                        .selectable(selected == index, role = Role.Tab, onClick = { dismissSnackbar(); selected = index })
-                        .padding(horizontal = 8.dp, vertical = 12.dp),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Box(Modifier.height(46.dp)
-                        .then(if(selected==index) Modifier.sketchFill(clayTint,2000) else Modifier)
-                        .padding(horizontal=6.dp),contentAlignment=Alignment.Center) {
-                        Text(label,color=if(selected==index) ink else soft,style=MaterialTheme.typography.labelLarge)
+        BoxWithConstraints(Modifier.fillMaxWidth().padding(start = 22.dp, end = 22.dp, bottom = 12.dp)) {
+            val tabWidth = (maxWidth - 24.dp) / 3
+            Box(Modifier.offset(x = (tabWidth + 12.dp) * (pagerState.currentPage + pagerState.currentPageOffsetFraction))
+                .width(tabWidth).height(72.dp).padding(horizontal = 18.dp, vertical = 13.dp).sketchFill(clayTint, 2000))
+            Row(Modifier.fillMaxWidth().selectableGroup(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                pages.forEachIndexed { index, label ->
+                    Box(Modifier.weight(1f).height(72.dp)
+                        .selectable(selected == index, role = Role.Tab, onClick = {
+                            dismissSnackbar()
+                            scope.launch { pagerState.animateScrollToPage(index, animationSpec = tween(300, easing = FastOutSlowInEasing)) }
+                        }), contentAlignment = Alignment.Center) {
+                            Text(label, color = if (selected == index) ink else soft, style = MaterialTheme.typography.labelLarge)
                     }
                 }
             }
         }
     }
 }
-
-

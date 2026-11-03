@@ -39,7 +39,7 @@ class TaskListViewModel(application: Application) : AndroidViewModel(application
         }
     }
     val monthTasks = calendarSelected.map { YearMonth.from(it) }.distinctUntilChanged()
-        .flatMapLatest { dao.observeBetween(it.atDay(1), it.atEndOfMonth()) }
+        .flatMapLatest { dao.observeBetween(it.minusMonths(1).atDay(1), it.plusMonths(1).atEndOfMonth()) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     fun selectDay(date: LocalDate) { calendarSelected.value = date }
