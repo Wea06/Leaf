@@ -1,4 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Leaf 应用图标 方向 D（笔迹 D1），由 icon-directions.html 导出，勿手改 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24">
-    <path android:fillColor="#FFFFFF" android:pathData="M20,3C10,2 3,7 4,14C5,18 9,20 13,18C18,16 20,10 20,3ZM4,22L2,21L14,8L15,9Z" />
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="53.43"
+    android:viewportHeight="53.43">
+    <group android:translateX="-25.43" android:translateY="-31.75">
+        <path
+            android:pathData="M58.91,51.1 L58.51,49.68 L58.24,47.6 L58.24,46.2 L58.3,45.51 L58.65,43.47 L59.52,40.86 L60.09,39.58 L60.8,38.33 L61.21,37.74 L62.17,36.63 L62.71,36.14 L63.9,35.3 L64.55,34.97 L65.93,34.52 L66.65,34.38 L68.09,34.24 L71.59,34.18 L76.2,33.73 L76.39,33.86 L76.79,35.8 L76.88,37.19 L76.73,39.96 L76.43,42.06 L75.85,44.12 L75.24,45.43 L74,47.21 L73.05,48.3 L71.4,49.75 L70.18,50.56 L69.53,50.91 L68.18,51.48 L66.76,51.87 L65.31,52.05 L63.14,51.97 L61.03,51.61 L58.91,51.1Z"
+            android:fillColor="#FFFFFFFF"
+            />
+        <path
+            android:pathData="M64.29 83.2H63.67L59 81H37.26V78.33H63.06L58 79.46L66.84 66.33L68.06 66.64ZM43.52 36.73V81H27.42V79.88L32.75 78.38V36.73L27.42 35.26V34.14H48.88V35.26Z"
+            android:fillColor="#FFFFFFFF"
+            />
+    </group>
 </vector>

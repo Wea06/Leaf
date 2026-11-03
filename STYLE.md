@@ -212,6 +212,13 @@ fun BoilClock(enabled: Boolean, content: @Composable () -> Unit) {
 | 复选框和文字之间 | 20dp |
 | 悬浮按钮离画框 | 右、下各 ≥ 30dp，且不压住最后一张卡片 |
 
+## 8.2 应用图标（用户 2026-11-03 选定方向 D，笔迹 D1）
+- 图案：Newsreader SemiBold（opsz 66）的大写 **L**，墨黑；右上角一片橙色叶子色块 + 墨线叶形描边（错位：色块左上 1.6、墨线右下 1.4，单位是 108 画布）。
+- 底色：底色 `#E3D9CD` 整块平涂。不抖，固定用一笔（笔迹 D1）。
+- 文件：`res/drawable/ic_launcher_foreground.xml`、`ic_launcher_background.xml`、`ic_launcher_monochrome.xml`（主题图标单色版：L + 叶子实心），`res/mipmap-anydpi-v26/ic_launcher(_round).xml` 引用它们；minSdk 29，所以没有位图图标。
+- 通知小图标 `ic_notification.xml` 用同一个单色 L + 叶子。
+- 这些路径由 `docs/demo/icon-directions.html` 生成（L 由字体轮廓转出），要改图标就改那个页面再重新导出，不要手改路径。
+
 ## 9. 已确认
 - [x] 抖动参数（定稿）：8fps / 3 帧循环 / 幅度 0.8dp / 扰动间隔 12dp / 主线 3.4dp；抖动、色块错位、卡片描边、墨线粗细不均、静止画框 全开
 - [x] 配色（定稿）：底色 #E3D9CD + 橙 + 墨黑 + 米白，见第 2 节
