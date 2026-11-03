@@ -13,12 +13,20 @@ import kotlinx.coroutines.sync.withLock
 import java.time.*
 
 const val REVIEW_ALARM = "com.leaftodo.app.REVIEW_ALARM"
-const val REVIEW_CHANNEL = "review"
+// 渠道建好后系统不让改振动等设置，所以开振动要换一个新 id；旧的 "review" 渠道删掉。
+const val REVIEW_CHANNEL = "review_v2"
+private const val OLD_REVIEW_CHANNEL = "review"
+private const val REVIEW_TAG = "review"
+private const val REVIEW_ID = 1
 
 fun createReviewChannel(context: Context) {
-    context.getSystemService(NotificationManager::class.java).createNotificationChannel(
+    val manager = context.getSystemService(NotificationManager::class.java)
+    manager.deleteNotificationChannel(OLD_REVIEW_CHANNEL)
+    manager.createNotificationChannel(
         NotificationChannel(REVIEW_CHANNEL, "每晚回顾", NotificationManager.IMPORTANCE_HIGH).apply {
             description = "每天晚上告诉你这一天完成了几条、还剩几条"
+            enableVibration(true)
+            lockscreenVisibility = Notification.VISIBILITY_PRIVATE
         })
 }
 
@@ -85,14 +93,27 @@ object NightlyReview {
     }
     private fun notify(context: Context, summary: ReviewSummary): Boolean {
         if (!canNotifyReview(context)) return false
+        val now = System.currentTimeMillis()
+        // 锁屏“隐藏通知内容”时显示这一份：只有标题和完成数，不列没做完的事。
+        val publicVersion = NotificationCompat.Builder(context, REVIEW_CHANNEL)
+            .setSmallIcon(R.drawable.ic_notification).setColor(0xFFD97757.toInt())
+            .setContentTitle(summary.title).setContentText(summary.text)
+            .setWhen(now).setShowWhen(true).build()
         val notification = NotificationCompat.Builder(context, REVIEW_CHANNEL)
             .setSmallIcon(R.drawable.ic_notification).setColor(0xFFD97757.toInt())
             .setContentTitle(summary.title).setContentText(summary.text)
             .setStyle(NotificationCompat.BigTextStyle().bigText(summary.bigText))
-            .setAutoCancel(true).setContentIntent(openTodayIntent(context, 1002))
+            .setWhen(now).setShowWhen(true)
+            .setVisibility(NotificationCompat.VISIBILITY_PRIVATE).setPublicVersion(publicVersion)
+            .setAutoCancel(true).setOnlyAlertOnce(false).setContentIntent(openTodayIntent(context, 1002))
             .setCategory(NotificationCompat.CATEGORY_REMINDER).setPriority(NotificationCompat.PRIORITY_HIGH).build()
-        return try { NotificationManagerCompat.from(context).notify("review", 1, notification); true }
-        catch (_: SecurityException) { false }
+        return try {
+            val compat = NotificationManagerCompat.from(context)
+            // 先撤掉通知栏里没清的旧回顾（比如“现在弹一次”留下的），让这次是一条新通知，
+            // 而不是“更新已有通知”——有的系统对更新不亮屏、不上锁屏。
+            compat.cancel(REVIEW_TAG, REVIEW_ID)
+            compat.notify(REVIEW_TAG, REVIEW_ID, notification); true
+        } catch (_: SecurityException) { false }
     }
 }
 
