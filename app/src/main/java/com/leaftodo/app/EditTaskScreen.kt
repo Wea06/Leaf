@@ -1,5 +1,7 @@
 package com.leaftodo.app
 
+import com.leaftodo.app.ui.sketch.*
+
 import android.Manifest
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -94,8 +96,10 @@ fun EditTaskScreen(id: Long?, defaultDate: String?, today: LocalDate, model: Tas
     BackHandler(onBack = cancel)
     if (!initialized) return
 
+    val scroll = rememberScrollState()
+    PauseBoilWhileScrolling(scroll)
     Column(Modifier.fillMaxSize().background(bg).windowInsetsPadding(WindowInsets.safeDrawing)
-        .imePadding().verticalScroll(rememberScrollState()).padding(horizontal = 34.dp, vertical = 20.dp),
+        .imePadding().verticalScroll(scroll).padding(horizontal = 34.dp, vertical = 20.dp),
         verticalArrangement = Arrangement.spacedBy(20.dp)) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             TextButton(onClick = cancel, enabled = !busy, contentPadding = PaddingValues(0.dp)) { Text("取消", color = ink) }
@@ -152,7 +156,7 @@ fun EditTaskScreen(id: Long?, defaultDate: String?, today: LocalDate, model: Tas
             }
         }
     }
-    if (error) AlertDialog(onDismissRequest = { error = false }, containerColor = card,
+    if (error) LeafDialog(onDismissRequest = { error = false }, containerColor = card,
         tonalElevation = 0.dp, textContentColor = ink, text = { Text("操作未完成，请重试。") },
         confirmButton = { TextButton(onClick = { error = false }) { Text("确定", color = clayText) } })
     if (datePicker) LeafDatePicker(date, today, onDismiss = { datePicker = false }) {
@@ -173,7 +177,7 @@ fun EditTaskScreen(id: Long?, defaultDate: String?, today: LocalDate, model: Tas
 private fun EditField(value: String, onChange: (String) -> Unit, placeholder: String, modifier: Modifier,
     singleLine: Boolean, keyboardActions: KeyboardActions = KeyboardActions.Default) {
     BasicTextField(value, onChange, modifier.fillMaxWidth().heightIn(min = if (singleLine) 60.dp else 120.dp)
-        .clip(RoundedCornerShape(16.dp)).background(card).padding(16.dp),
+        .sketchCard().padding(16.dp),
         textStyle = MaterialTheme.typography.bodyLarge.copy(color = ink), cursorBrush = SolidColor(ink),
         singleLine = singleLine, keyboardOptions = KeyboardOptions(imeAction = if (singleLine) ImeAction.Next else ImeAction.Default),
         keyboardActions = keyboardActions, decorationBox = { field ->
@@ -187,22 +191,21 @@ private fun EditField(value: String, onChange: (String) -> Unit, placeholder: St
 @Composable
 private fun PickerRow(label: String, value: String, enabled: Boolean, selected: Boolean,
     isTime: Boolean = false, onClick: () -> Unit, onClear: () -> Unit) {
-    Row(Modifier.fillMaxWidth().height(60.dp).clip(RoundedCornerShape(16.dp)).background(card)
-        .clickable(enabled = enabled, onClick = onClick).padding(start = 16.dp, end = 8.dp),
+    Row(Modifier.fillMaxWidth().height(60.dp).sketchClickable(enabled, onClick).padding(start = 16.dp, end = 8.dp),
         verticalAlignment = Alignment.CenterVertically) {
         Text(label, color = soft, modifier = Modifier.weight(1f))
         Text(value, color = if (!selected || !enabled) soft else if (isTime) clayText else ink,
             style = MaterialTheme.typography.bodyLarge.copy(fontFeatureSettings = if (isTime) "tnum" else null))
         if (selected) Box(Modifier.padding(start = 4.dp).size(40.dp).clip(CircleShape)
             .clickable(onClick = onClear).semantics { contentDescription = "清空$label" }, contentAlignment = Alignment.Center) {
-            Text("×", color = ink)
+            Box(Modifier.size(14.dp).sketchDrawing { _,id -> line(0f,0f,w,h,id,width=2f,amp=.24f); line(0f,h,w,0f,id+1,width=2f,amp=.24f) })
         } else Spacer(Modifier.width(8.dp))
     }
 }
 
 @Composable
 internal fun LeafConfirm(message: String, confirm: String, cancel: String, onDismiss: () -> Unit, onConfirm: () -> Unit) {
-    AlertDialog(onDismissRequest = onDismiss, containerColor = card, tonalElevation = 0.dp,
+    LeafDialog(onDismissRequest = onDismiss, containerColor = card, tonalElevation = 0.dp,
         textContentColor = ink, text = { Text(message) },
         confirmButton = { TextButton(onClick = onConfirm) { Text(confirm, color = clayText) } },
         dismissButton = { TextButton(onClick = onDismiss) { Text(cancel, color = ink) } })
@@ -214,12 +217,12 @@ private fun LeafDatePicker(date: LocalDate?, today: LocalDate, onDismiss: () -> 
     val state = rememberDatePickerState(
         initialSelectedDateMillis = date?.atStartOfDay(ZoneOffset.UTC)?.toInstant()?.toEpochMilli(),
         initialDisplayedMonthMillis = (date ?: today).atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli())
-    DatePickerDialog(onDismissRequest = onDismiss, colors = DatePickerDefaults.colors(containerColor = card), tonalElevation = 0.dp,
+    LeafDialog(onDismissRequest = onDismiss,
         confirmButton = { TextButton(onClick = {
             val ms = state.selectedDateMillis
             if (ms != null) onSelect(Instant.ofEpochMilli(ms).atZone(ZoneOffset.UTC).toLocalDate()) else onDismiss()
         }) { Text("确定", color = clayText) } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("取消", color = ink) } }) {
+        dismissButton = { TextButton(onClick = onDismiss) { Text("取消", color = ink) } }, text = {
         DatePicker(state, showModeToggle = false, colors = DatePickerDefaults.colors(
             containerColor = card, titleContentColor = ink, headlineContentColor = ink,
             weekdayContentColor = soft, subheadContentColor = ink, navigationContentColor = ink,
@@ -231,14 +234,14 @@ private fun LeafDatePicker(date: LocalDate?, today: LocalDate, onDismiss: () -> 
             todayContentColor = clayText, todayDateBorderColor = clayText,
             dayInSelectionRangeContentColor = ink, dayInSelectionRangeContainerColor = clayTint,
             dividerColor = rule))
-    }
+    })
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun LeafTimePicker(time: LocalTime?, onDismiss: () -> Unit, onSelect: (LocalTime) -> Unit) {
     val state = rememberTimePickerState(initialHour = time?.hour ?: 9, initialMinute = time?.minute ?: 0, is24Hour = true)
-    AlertDialog(onDismissRequest = onDismiss, containerColor = card, tonalElevation = 0.dp,
+    LeafDialog(onDismissRequest = onDismiss, containerColor = card, tonalElevation = 0.dp,
         titleContentColor = ink, title = { Text("时间") }, text = {
             MaterialTheme(typography = MaterialTheme.typography.copy(
                 displayLarge = MaterialTheme.typography.displayLarge.copy(fontFeatureSettings = "tnum"),

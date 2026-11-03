@@ -1,5 +1,7 @@
 package com.leaftodo.app
 
+import com.leaftodo.app.ui.sketch.*
+
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -34,8 +36,10 @@ internal fun SettingsScreen(onClose: () -> Unit, model: BackupViewModel = viewMo
     val import = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         uri?.let(model::pickImport)
     }
+    val scroll = rememberScrollState()
+    PauseBoilWhileScrolling(scroll)
     Column(Modifier.fillMaxSize().background(bg).windowInsetsPadding(WindowInsets.safeDrawing)
-        .verticalScroll(rememberScrollState()).padding(horizontal = 34.dp, vertical = 20.dp),
+        .verticalScroll(scroll).padding(horizontal = 34.dp, vertical = 20.dp),
         verticalArrangement = Arrangement.spacedBy(20.dp)) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             TextButton(onClick = { model.cancelImport(); onClose() }, enabled = !busy,
@@ -64,7 +68,7 @@ internal fun SettingsScreen(onClose: () -> Unit, model: BackupViewModel = viewMo
         LeafConfirm(message, "导入", "取消", model::cancelImport, model::confirmImport)
     }
     (ui as? BackupUi.Message)?.let { message ->
-        AlertDialog(onDismissRequest = model::dismiss, containerColor = card, tonalElevation = 0.dp,
+        LeafDialog(onDismissRequest = model::dismiss, containerColor = card, tonalElevation = 0.dp,
             textContentColor = ink, text = { Text(message.text) },
             confirmButton = { TextButton(onClick = model::dismiss) { Text("好", color = clayText) } })
     }
@@ -73,8 +77,7 @@ internal fun SettingsScreen(onClose: () -> Unit, model: BackupViewModel = viewMo
 @Composable
 internal fun SettingsButton(title: String, description: String, enabled: Boolean,
     descriptionColor: androidx.compose.ui.graphics.Color = soft, trailing: (@Composable () -> Unit)? = null, tabular: Boolean = false, onClick: () -> Unit) {
-    Column(Modifier.fillMaxWidth().heightIn(min = 60.dp).clip(RoundedCornerShape(16.dp))
-        .background(card).clickable(enabled = enabled, onClick = onClick).padding(16.dp)) {
+    Column(Modifier.fillMaxWidth().heightIn(min = 60.dp).sketchClickable(enabled, onClick).padding(16.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(title, Modifier.weight(1f), color = if (enabled) ink else soft, style = MaterialTheme.typography.bodyLarge)
             trailing?.invoke()

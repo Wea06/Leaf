@@ -1,5 +1,7 @@
 package com.leaftodo.app
 
+import com.leaftodo.app.ui.sketch.*
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.selection.*
@@ -49,9 +51,7 @@ internal fun ReviewSettingsBlock() {
     Text("每天到这个时间，Leaf 告诉你这一天完成了几条、还剩几条。这一天没有带日期的事就不弹。", style = MaterialTheme.typography.bodyMedium, color = soft)
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         SettingsButton("每晚回顾", if (enabled) "已打开" else "已关闭，不会弹", true, trailing = {
-            Switch(checked = enabled, onCheckedChange = null, colors = SwitchDefaults.colors(
-                checkedThumbColor = card, checkedTrackColor = clay, checkedBorderColor = clay,
-                uncheckedThumbColor = card, uncheckedTrackColor = rule, uncheckedBorderColor = rule))
+            SketchSwitch(checked = enabled)
         }) {
             settings.setReviewEnabled(!enabled)
             if (!enabled && !canNotifyReview(context)) requestNotifications()
@@ -75,7 +75,7 @@ internal fun ReviewSettingsBlock() {
         if (!canNotifyReview(context)) requestNotifications()
         NightlyReview.onSettingsChanged(context)
     }
-    if (empty) AlertDialog(onDismissRequest = { empty = false }, containerColor = card, tonalElevation = 0.dp,
+    if (empty) LeafDialog(onDismissRequest = { empty = false }, containerColor = card, tonalElevation = 0.dp,
         textContentColor = ink, text = { Text("今天还没有带日期的事，晚上不会弹回顾。") },
         confirmButton = { TextButton(onClick = { empty = false }) { Text("好", color = clayText) } })
 }
@@ -84,13 +84,14 @@ internal fun ReviewSettingsBlock() {
 internal fun PaperSettingsBlock() {
     val settings = LeafSettings.get(LocalContext.current)
     val effect by settings.paperEffect.collectAsState()
-    Text("纸面效果", Modifier.padding(top = 12.dp), style = MaterialTheme.typography.titleMedium, color = ink)
-    Text("盖在整个画面上的一层很淡的纹理。", style = MaterialTheme.typography.bodyMedium, color = soft)
+    val boil by settings.boilEnabled.collectAsState()
+    Text("外观", Modifier.padding(top = 12.dp), style = MaterialTheme.typography.titleMedium, color = ink)
+    Text("纸面纹理和线条抖动。", style = MaterialTheme.typography.bodyMedium, color = soft)
+    Text("纸面效果", color = soft, style = MaterialTheme.typography.bodySmall)
     Row(Modifier.fillMaxWidth().selectableGroup(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         PaperEffect.entries.forEach { option ->
             val selected = effect == option
-            Box(Modifier.weight(1f).heightIn(min = 48.dp).clip(RoundedCornerShape(16.dp))
-                .background(if (selected) clayTint else card)
+            Box(Modifier.weight(1f).heightIn(min = 48.dp).sketchCard(if (selected) clayTint else card)
                 .selectable(selected, role = Role.RadioButton, onClick = { settings.setPaperEffect(option) })
                 .padding(vertical = 14.dp), contentAlignment = androidx.compose.ui.Alignment.Center) {
                 Text(when (option) { PaperEffect.FIBER -> "纸纤维"; PaperEffect.GRID -> "方格线"; PaperEffect.NONE -> "无" },
@@ -98,4 +99,5 @@ internal fun PaperSettingsBlock() {
             }
         }
     }
+    SettingsButton("线条抖动", if (boil) "线条会轻轻晃动，像手翻书" else "线条静止不动", true, trailing = { SketchSwitch(boil) }) { settings.setBoilEnabled(!boil) }
 }
