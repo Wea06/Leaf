@@ -201,11 +201,11 @@ internal fun CalendarDay(date: LocalDate, today: LocalDate, mark: DayMark, selec
             if(selected) rect(2f,1f,w-4,h-2,id+400,stroke=1.7f,amp=.4f)
         }
         .clickable(interactionSource=remember { androidx.compose.foundation.interaction.MutableInteractionSource() },indication=null,onClick=onClick)
-        .semantics { contentDescription = formatDate(date,today) + "，" + mark.label() }, contentAlignment=Alignment.TopCenter) {
-        Text(date.dayOfMonth.toString(),modifier=Modifier.padding(top=5.dp),
+        .semantics { contentDescription = formatDate(date,today) + "，" + mark.label() }, contentAlignment=Alignment.Center) {
+        Text(date.dayOfMonth.toString(),
             color=if(mark==DayMark.OPEN_STALE) soft else ink,
             style=MaterialTheme.typography.bodyLarge.copy(fontFeatureSettings="tnum"))
-        Box(Modifier.align(Alignment.BottomCenter).padding(bottom=7.dp)) { MarkDot(mark,date.toEpochDay().toInt()) }
+        Box(Modifier.align(Alignment.BottomCenter).padding(bottom=3.dp)) { MarkDot(mark,date.toEpochDay().toInt()) }
     }
 }
 
