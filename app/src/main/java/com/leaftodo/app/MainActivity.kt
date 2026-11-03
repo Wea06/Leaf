@@ -164,9 +164,10 @@ private fun LeafApp(openTodayRequests: Int) {
         Modifier.fillMaxSize().background(bg).windowInsetsPadding(WindowInsets.safeDrawing)
     ) {
         Box(Modifier.weight(1f).fillMaxWidth()) {
-            HorizontalPager(state = pagerState, beyondViewportPageCount = 1, modifier = Modifier.fillMaxSize()) { page ->
+            HorizontalPager(state = pagerState, beyondViewportPageCount = 1,
+                verticalAlignment = Alignment.Top, modifier = Modifier.fillMaxSize()) { page ->
                 DrawingPage(scrollState = pagerState) {
-                    Column(Modifier.padding(horizontal = 34.dp, vertical = 32.dp)) {
+                    Column(Modifier.fillMaxSize().padding(start = 34.dp, end = 34.dp, top = 32.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(pages[page], Modifier.weight(1f), style = MaterialTheme.typography.headlineLarge)
                             Box(Modifier.heightIn(min = 48.dp).clip(RoundedCornerShape(12.dp))
@@ -211,18 +212,19 @@ private fun LeafApp(openTodayRequests: Int) {
                     defaultDate = defaultDateFor(TaskPage.entries[selected], today, calendarSelected)?.toString()
                     editing = true
                 },
-                modifier = Modifier.align(Alignment.BottomEnd).padding(end = 42.dp, bottom = 42.dp)
+                // The page viewport extends 12dp farther down; keep the floating controls in place.
+                modifier = Modifier.align(Alignment.BottomEnd).padding(end = 42.dp, bottom = 54.dp)
                     .size(56.dp).semantics { contentDescription = "新建一条事" }
             )
             SnackbarHost(snackbarHost, Modifier.align(Alignment.BottomCenter)
-                .padding(start = 34.dp, end = 34.dp, bottom = 114.dp)) { data ->
+                .padding(start = 34.dp, end = 34.dp, bottom = 126.dp)) { data ->
                 Row(Modifier.fillMaxWidth().sketchFill(ink,812).padding(horizontal=16.dp),verticalAlignment=Alignment.CenterVertically) {
                     Text(data.visuals.message,color=card,maxLines=1,overflow=TextOverflow.Ellipsis,modifier=Modifier.weight(1f))
                     TextButton(onClick={data.performAction()}) { Text("撤回",color=clay) }
                 }
             }
         }
-        BoxWithConstraints(Modifier.fillMaxWidth().padding(horizontal = 22.dp, vertical = 12.dp)) {
+        BoxWithConstraints(Modifier.fillMaxWidth().padding(start = 22.dp, end = 22.dp, bottom = 12.dp)) {
             val tabWidth = (maxWidth - 24.dp) / 3
             Box(Modifier.offset(x = (tabWidth + 12.dp) * (pagerState.currentPage + pagerState.currentPageOffsetFraction))
                 .width(tabWidth).height(72.dp).padding(horizontal = 18.dp, vertical = 13.dp).sketchFill(clayTint, 2000))
