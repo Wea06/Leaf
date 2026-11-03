@@ -40,7 +40,7 @@ fun splitToday(tasks: List<Task>): TaskGroups = TaskGroups(
     tasks.filter { it.status != TaskStatus.OPEN }.sortedByDescending { it.closedAt },
 )
 
-private val openTaskComparator: Comparator<Task> =
+internal val openTaskComparator: Comparator<Task> =
     compareBy<Task> { it.time == null }.thenBy { it.time }.thenBy { it.createdAt }
 
 fun recentRange(today: LocalDate): ClosedRange<LocalDate> = today.minusDays(7)..today.minusDays(1)

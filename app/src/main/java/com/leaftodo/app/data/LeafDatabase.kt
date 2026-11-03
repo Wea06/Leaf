@@ -44,6 +44,8 @@ interface TaskDao {
     @Query("DELETE FROM tasks") suspend fun deleteAll()
     @Insert(onConflict = OnConflictStrategy.ABORT) suspend fun insertAll(tasks: List<Task>)
     @Query("SELECT * FROM tasks WHERE date IS NULL") fun observeListTasks(): Flow<List<Task>>
+    @Query("SELECT * FROM tasks WHERE date IS NULL OR date > :today OR (status = 'OPEN' AND date < :today)")
+    fun observeListSections(today: LocalDate): Flow<List<Task>>
     @Query("SELECT * FROM tasks WHERE date = :date") fun observeTasksOn(date: LocalDate): Flow<List<Task>>
     @Query("SELECT * FROM tasks WHERE status = 'OPEN' AND date BETWEEN :from AND :to")
     fun observeOpenBetween(from: LocalDate, to: LocalDate): Flow<List<Task>>

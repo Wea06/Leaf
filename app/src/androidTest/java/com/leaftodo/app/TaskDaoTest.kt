@@ -10,6 +10,23 @@ import org.junit.*
 import org.junit.Assert.*
 
 class TaskDaoTest {
+    @Test fun listSectionsQueryFiltersTodayAndClosedPastAndMovesAtMidnight() = runBlocking {
+        val dao = db.taskDao()
+        val today = LocalDate.of(2026, 11, 3)
+        val tasks = listOf(null, today.minusDays(1), today, today.plusDays(1)).flatMap { date ->
+            TaskStatus.entries.map { status -> newTask("test", "", date, null, now).withStatus(status, now) }
+        }.map { it.copy(id = dao.insert(it)) }
+        fun expected(day: LocalDate) = tasks.filter {
+            it.date == null || it.date.isAfter(day) || (it.status == TaskStatus.OPEN && it.date.isBefore(day))
+        }.map { it.id }.toSet()
+        assertEquals(expected(today), dao.observeListSections(today).first().map { it.id }.toSet())
+        assertEquals(expected(today.plusDays(1)), dao.observeListSections(today.plusDays(1)).first().map { it.id }.toSet())
+        val overdue = tasks.first { it.date == today.minusDays(1) && it.status == TaskStatus.OPEN }
+        dao.update(overdue.withStatus(TaskStatus.DONE, now))
+        assertEquals(expected(today) - overdue.id, dao.observeListSections(today).first().map { it.id }.toSet())
+        dao.update(overdue)
+        assertEquals(expected(today), dao.observeListSections(today).first().map { it.id }.toSet())
+    }
     @Test fun reviewQueryIncludesAllStatusesOnlyOnChosenDay() = runBlocking {
         val dao = db.taskDao()
         val day = LocalDate.of(2026, 11, 2)

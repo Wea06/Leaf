@@ -9,6 +9,9 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.YearMonth
+import java.time.Duration
+import java.time.ZonedDateTime
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -17,9 +20,24 @@ import kotlinx.coroutines.async
 @OptIn(ExperimentalCoroutinesApi::class)
 class TaskListViewModel(application: Application) : AndroidViewModel(application) {
     private val dao = LeafDatabase.get(application).taskDao()
-    val tasks = dao.observeListTasks().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
     val today = MutableStateFlow(LocalDate.now())
-    val calendarSelected = MutableStateFlow(LocalDate.now())
+    val tasks = today.flatMapLatest { dao.observeListSections(it) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    val calendarSelected = MutableStateFlow(today.value)
+    private var midnightJob: kotlinx.coroutines.Job? = null
+
+    init { scheduleMidnight() }
+
+    private fun scheduleMidnight() {
+        midnightJob?.cancel()
+        midnightJob = viewModelScope.launch {
+            while (true) {
+                val now = ZonedDateTime.now()
+                delay(Duration.between(now, nextMidnight(now)).toMillis() + 1000)
+                updateToday()
+            }
+        }
+    }
     val monthTasks = calendarSelected.map { YearMonth.from(it) }.distinctUntilChanged()
         .flatMapLatest { dao.observeBetween(it.atDay(1), it.atEndOfMonth()) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
@@ -39,7 +57,16 @@ class TaskListViewModel(application: Application) : AndroidViewModel(application
         dao.observeOpenBetween(range.start, range.endInclusive)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    fun refreshToday() { today.value = LocalDate.now() }
+    fun refreshToday() {
+        updateToday()
+        scheduleMidnight()
+    }
+    private fun updateToday() {
+        val oldToday = today.value
+        val newToday = LocalDate.now()
+        if (calendarSelected.value == oldToday) calendarSelected.value = newToday
+        today.value = newToday
+    }
     suspend fun load(id: Long): Task? = dao.getById(id)
     suspend fun save(id: Long?, title: String, note: String, date: LocalDate?, time: LocalTime?) = viewModelScope.async {
         if (title.isBlank()) return@async
