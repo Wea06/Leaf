@@ -223,7 +223,7 @@ private fun LeafDatePicker(date: LocalDate?, today: LocalDate, onDismiss: () -> 
             if (ms != null) onSelect(Instant.ofEpochMilli(ms).atZone(ZoneOffset.UTC).toLocalDate()) else onDismiss()
         }) { Text("确定", color = clayText) } },
         dismissButton = { TextButton(onClick = onDismiss) { Text("取消", color = ink) } }, text = {
-        DatePicker(state, showModeToggle = false, colors = DatePickerDefaults.colors(
+        DatePicker(state, modifier = Modifier.fitSketchPicker(), showModeToggle = false, colors = DatePickerDefaults.colors(
             containerColor = card, titleContentColor = ink, headlineContentColor = ink,
             weekdayContentColor = soft, subheadContentColor = ink, navigationContentColor = ink,
             yearContentColor = ink, currentYearContentColor = clayText,
@@ -247,7 +247,7 @@ internal fun LeafTimePicker(time: LocalTime?, onDismiss: () -> Unit, onSelect: (
                 displayLarge = MaterialTheme.typography.displayLarge.copy(fontFeatureSettings = "tnum"),
                 bodyLarge = MaterialTheme.typography.bodyLarge.copy(fontFeatureSettings = "tnum"),
             )) {
-            TimePicker(state, colors = TimePickerDefaults.colors(
+            TimePicker(state, modifier = Modifier.fitSketchPicker(300.dp), colors = TimePickerDefaults.colors(
                 clockDialColor = bg, selectorColor = clay, containerColor = card,
                 clockDialSelectedContentColor = ink, clockDialUnselectedContentColor = ink,
                 periodSelectorBorderColor = rule, periodSelectorSelectedContainerColor = clay,

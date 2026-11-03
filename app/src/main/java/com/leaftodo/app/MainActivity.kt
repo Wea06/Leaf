@@ -220,13 +220,15 @@ private fun LeafApp(openTodayRequests: Int) {
             pages.forEachIndexed { index, label ->
                 Box(
                     Modifier.weight(1f).heightIn(min = 48.dp)
-                        .then(if (selected == index) Modifier.sketchFill(clayTint,2000) else Modifier)
                         .selectable(selected == index, role = Role.Tab, onClick = { dismissSnackbar(); selected = index })
                         .padding(horizontal = 8.dp, vertical = 12.dp),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Text(label, color = if (selected == index) ink else soft,
-                        style = MaterialTheme.typography.labelLarge)
+                    Box(Modifier.height(46.dp)
+                        .then(if(selected==index) Modifier.sketchFill(clayTint,2000) else Modifier)
+                        .padding(horizontal=6.dp),contentAlignment=Alignment.Center) {
+                        Text(label,color=if(selected==index) ink else soft,style=MaterialTheme.typography.labelLarge)
+                    }
                 }
             }
         }

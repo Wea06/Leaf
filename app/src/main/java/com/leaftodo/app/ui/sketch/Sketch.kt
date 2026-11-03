@@ -18,6 +18,8 @@ import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.unit.*
 import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
+import androidx.compose.ui.layout.layout
 import com.leaftodo.app.data.*
 import com.leaftodo.app.ui.theme.*
 import kotlin.math.*
@@ -50,6 +52,19 @@ class SketchPen internal constructor(frameIndex: Int, widthDp: Float, heightDp: 
         ink(id, color, width) { seed -> Path().also { p ->
             val points = roughPoints(x,y,x2,y2,seed,amp,12f,over)
             trace(points.take(max(2, ceil(points.size * progress.coerceAtMost(1f)).toInt())), path = p)
+        } }
+    }
+    /** Multiple strokes share one ink seed; subsequent strokes use s+1, as in the demos. */
+    fun strokes(id: Int, segments: List<FloatArray>, color: Color = ink, width: Float = 3.4f,
+        amp: Float = .4f, over: Boolean = true, progress: List<Float> = List(segments.size) { 1f }) {
+        ink(id,color,width) { seed -> Path().also { path ->
+            segments.forEachIndexed { i, e ->
+                val fraction=progress[i]
+                if(fraction>0f) {
+                    val points=roughPoints(e[0],e[1],e[2],e[3],seed+i,amp,12f,over)
+                    trace(points.take(max(2,ceil(points.size*fraction.coerceAtMost(1f)).toInt())),path=path)
+                }
+            }
         } }
     }
     fun rect(x: Float, y: Float, width: Float, height: Float, id: Int,
@@ -135,7 +150,8 @@ fun StaticFrame(modifier: Modifier = Modifier) {
 @Composable
 fun SketchCheckbox(status: TaskStatus, timed: Boolean, seed: Int, progress: State<Float>, onClick: () -> Unit) {
     Box(Modifier.size(48.dp).clickable(interactionSource=remember { MutableInteractionSource() }, indication=null,
-        role=Role.Checkbox, onClickLabel="完成或撤回", onClick=onClick), contentAlignment=Alignment.Center) {
+        role=Role.Checkbox, onClickLabel="完成或撤回", onClick=onClick)
+        .semantics { toggleableState = ToggleableState(status==TaskStatus.DONE) }, contentAlignment=Alignment.Center) {
         Box(Modifier.size(20.dp).sketchDrawing(seed,progress=progress) { p,id ->
             if (status==TaskStatus.DONE) {
                 val z=24*popScale(p); val c=(24-z)/2
@@ -143,8 +159,8 @@ fun SketchCheckbox(status: TaskStatus, timed: Boolean, seed: Int, progress: Stat
             }
             rect(0f,0f,20f,20f,id+60,if(timed && status==TaskStatus.OPEN) clay else ink,2.89f,.48f)
             if (status==TaskStatus.DONE) {
-                line(3f,10f,9f,17f,id+80,amp=.4f,progress=p*3)
-                line(9f,17f,22f,-2f,id+81,amp=.4f,progress=(p-.34f)*1.5f)
+                strokes(id+80,listOf(floatArrayOf(3f,10f,9f,17f),floatArrayOf(9f,17f,22f,-2f)),
+                    progress=listOf(p*3,(p-.34f)*1.5f))
             }
             if (status==TaskStatus.DROPPED) line(4f,10f,16f,10f,id+80,width=3.06f,amp=.4f,progress=p*1.6f)
         })
@@ -158,8 +174,8 @@ fun SketchFab(onClick: () -> Unit, modifier: Modifier = Modifier) {
             val x=w/2; val y=h/2
             circle(x-1.5f,y-1.5f,26f,id,clay)
             circle(x+1.5f,y+1.5f,26f,id,ink,3.4f)
-            line(x-8.5f,y+1.5f,x+11.5f,y+1.5f,id+1,amp=.48f)
-            line(x+1.5f,y-8.5f,x+1.5f,y+11.5f,id+2,amp=.48f)
+            strokes(id+1,listOf(floatArrayOf(x-8.5f,y+1.5f,x+11.5f,y+1.5f),
+                floatArrayOf(x+1.5f,y-8.5f,x+1.5f,y+11.5f)),amp=.48f)
         })
 }
 
@@ -195,8 +211,21 @@ fun SketchStrike(text: String, color: Color, struck: Boolean, seed: Int, progres
 
 @Composable
 fun SketchButton(text: String, onClick: () -> Unit, primary: Boolean = true) {
-    Box(Modifier.heightIn(min=48.dp).sketchCard(if(primary) clay else card)
+    Box(Modifier.heightIn(min=48.dp).then(if(primary) Modifier.sketchFill(clay) else Modifier.sketchDrawing { _,id -> rect(0f,0f,w,h,id) })
         .clickable(onClick=onClick).padding(16.dp),contentAlignment=Alignment.Center) { Text(text,color=ink) }
+}
+
+/** Material pickers have a fixed preferred width; fit the whole control without clipping columns. */
+fun Modifier.fitSketchPicker(preferredWidth: Dp = 360.dp): Modifier = layout { measurable, constraints ->
+    val width = constraints.maxWidth
+    val natural = max(width, preferredWidth.roundToPx())
+    val scale = width.toFloat() / natural
+    val child = measurable.measure(androidx.compose.ui.unit.Constraints(
+        minWidth=natural,maxWidth=natural,
+        maxHeight=if(constraints.maxHeight==androidx.compose.ui.unit.Constraints.Infinity) constraints.maxHeight else (constraints.maxHeight/scale).toInt()))
+    layout(width,(child.height*scale).roundToInt()) {
+        child.placeWithLayer(0,0) { scaleX=scale; scaleY=scale; transformOrigin=TransformOrigin(0f,0f) }
+    }
 }
 
 /** Shared dialog shell; keep the existing picker and confirmation callbacks. */
@@ -205,10 +234,11 @@ fun LeafDialog(onDismissRequest: () -> Unit, confirmButton: @Composable () -> Un
     dismissButton: (@Composable () -> Unit)? = null, title: (@Composable () -> Unit)? = null,
     text: (@Composable () -> Unit)? = null, containerColor: Color = card,
     tonalElevation: Dp = 0.dp, titleContentColor: Color = ink, textContentColor: Color = ink) {
-    Dialog(onDismissRequest=onDismissRequest) {
-        SketchCard(Modifier.fillMaxWidth()) {
+    Dialog(onDismissRequest=onDismissRequest, properties=DialogProperties(usePlatformDefaultWidth=false)) {
+        SketchCard(Modifier.padding(horizontal=16.dp).widthIn(max=560.dp).fillMaxWidth()) {
             Column(Modifier.padding(24.dp),verticalArrangement=Arrangement.spacedBy(20.dp)) {
-                title?.invoke(); text?.invoke()
+                if(title!=null) ProvideTextStyle(MaterialTheme.typography.headlineSmall.copy(color=titleContentColor)) { title() }
+                if(text!=null) ProvideTextStyle(MaterialTheme.typography.bodyMedium.copy(color=textContentColor)) { text() }
                 Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.End,verticalAlignment=Alignment.CenterVertically) {
                     dismissButton?.invoke(); confirmButton()
                 }

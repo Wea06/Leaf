@@ -187,8 +187,7 @@ private fun MonthArrow(previous: Boolean, onClick: () -> Unit) {
         .semantics { contentDescription = if (previous) "上个月" else "下个月" }, contentAlignment = Alignment.Center) {
         Box(Modifier.size(10.dp,16.dp).sketchDrawing(if(previous) 301 else 302) { _,id ->
             val start=if(previous) w else 0f; val end=w-start
-            line(start,0f,end,h/2,id,width=2.4f,amp=.24f,over=false)
-            line(end,h/2,start,h,id+1,width=2.4f,amp=.24f,over=false)
+            strokes(id,listOf(floatArrayOf(start,0f,end,h/2),floatArrayOf(end,h/2,start,h)),width=2.4f,amp=.24f,over=false)
         })
     }
 }
@@ -215,8 +214,7 @@ private fun MarkDot(mark: DayMark, seed: Int = 1701) {
     Box(Modifier.size(14.dp).sketchDrawing(seed) { _,id ->
         when(mark) {
             DayMark.ALL_CLOSED -> {
-                line(2.5f,7f,5.8f,10.4f,id,width=1.8f,amp=.25f,over=false)
-                line(5.8f,10.4f,12f,3.4f,id+1,width=1.8f,amp=.25f,over=false)
+                strokes(id,listOf(floatArrayOf(2.5f,7f,5.8f,10.4f),floatArrayOf(5.8f,10.4f,12f,3.4f)),width=1.8f,amp=.25f,over=false)
             }
             DayMark.OPEN_RECENT -> circle(7f,7f,3.4f,id,clay,amp=.2f)
             DayMark.OPEN_STALE -> circle(7f,7f,3.2f,id,soft,amp=.2f)
