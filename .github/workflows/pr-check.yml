@@ -63,7 +63,7 @@ jobs:
       - name: 编译 debug APK 并跑单元测试
         run: ./gradlew assembleDebug testDebugUnitTest --stacktrace
 
-      - name: 正式版（开启 R8 压缩）也要能编译
+      - name: 正式版也要能编译
         run: ./gradlew assembleRelease --stacktrace
 
       - name: 数据库 schema 文件必须已提交且是最新的

@@ -18,6 +18,7 @@
 - 数据库结构冻结：`app/schemas/` 里已有的 json 一个字都不能改、不能删（自动检查会报红叉）。要改表：数据库版本 +1、生成新的 schema 文件、写 Migration 和迁移测试，备份格式按 SPEC 7.1 处理。
 - 真机测试只装开发版（debug，包名 com.leaftodo.app.debug，桌面名“Leaf 开发版”）。不要卸载、不要覆盖、不要往正式版 com.leaftodo.app 上跑测试。
 - 不改 release 签名配置，不把 keystore 或密码写进任何文件。
+- 正式版不开 R8 压缩（v0.1.0 开了会一启动就闪退）。要重新打开，必须先在真机上装 release 版跑通，不能只看编译通过。
 - 要出新正式版时 versionCode +1、versionName 按里程碑改，并在交付说明里提醒用户“装前先在正式版里导出一份备份”。
 
 ## 技术
