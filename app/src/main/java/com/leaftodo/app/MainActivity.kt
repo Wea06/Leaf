@@ -1,7 +1,13 @@
 package com.leaftodo.app
 
 import android.os.Bundle
+import android.os.Build
 import android.content.Intent
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.IntentFilter
+import androidx.core.content.ContextCompat
+import androidx.activity.viewModels
 import androidx.compose.ui.platform.LocalContext
 import com.leaftodo.app.reminder.*
 import com.leaftodo.app.settings.LeafSettings
@@ -39,6 +45,29 @@ import kotlinx.coroutines.launch
 import com.leaftodo.app.ui.theme.*
 
 class MainActivity : ComponentActivity() {
+    private val model: TaskListViewModel by viewModels()
+    private val dateReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) { model.refreshToday() }
+    }
+    override fun onStart() {
+        super.onStart()
+        val filter = IntentFilter().apply {
+            addAction(Intent.ACTION_DATE_CHANGED)
+            addAction(Intent.ACTION_TIME_CHANGED)
+            addAction(Intent.ACTION_TIMEZONE_CHANGED)
+        }
+        if (Build.VERSION.SDK_INT >= 33) {
+            ContextCompat.registerReceiver(this, dateReceiver, filter, ContextCompat.RECEIVER_NOT_EXPORTED)
+        } else {
+            @Suppress("UnspecifiedRegisterReceiverFlag")
+            registerReceiver(dateReceiver, filter)
+        }
+        model.refreshToday()
+    }
+    override fun onStop() {
+        unregisterReceiver(dateReceiver)
+        super.onStop()
+    }
     private var openTodayRequests by mutableIntStateOf(0)
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
@@ -76,6 +105,11 @@ private fun LeafApp(openTodayRequests: Int) {
     val calendarSelected by model.calendarSelected.collectAsStateWithLifecycle()
     var todayExpanded by rememberSaveable { mutableStateOf(false) }
     var listExpanded by rememberSaveable { mutableStateOf(false) }
+    var futureExpanded by rememberSaveable { mutableStateOf(true) }
+    var noDateExpanded by rememberSaveable { mutableStateOf(true) }
+    var overdueExpanded by rememberSaveable { mutableStateOf(true) }
+    var olderExpanded by rememberSaveable { mutableStateOf(false) }
+    val sections = remember(tasks, today) { listSections(tasks, today) }
     val snackbarHost = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     var snackbarJob by remember { mutableStateOf<Job?>(null) }
@@ -135,8 +169,11 @@ private fun LeafApp(openTodayRequests: Int) {
                 }
                 if (selected == 1) {
                     Spacer(Modifier.height(20.dp))
-                    TaskList(splitList(tasks), "还没有事，点右下角 ＋ 记一条", today,
-                        expanded = listExpanded, onExpandedChange = { listExpanded = it }, showCreatedDate = true,
+                    SectionedTaskList(sections, today,
+                        futureExpanded, { futureExpanded = it }, noDateExpanded, { noDateExpanded = it },
+                        overdueExpanded, { overdueExpanded = it }, olderExpanded, { olderExpanded = it },
+                        listExpanded, { listExpanded = it },
+                        onOverdueToggle = { recentClosed(it, false) }, onOverdueDrop = { recentClosed(it, true) },
                         onToggle = model::toggleDone, onDrop = model::drop, onReopen = model::reopen,
                         onEdit = { dismissSnackbar(); editingId = it.id; editing = true })
                 }
