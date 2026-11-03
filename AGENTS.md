@@ -16,7 +16,7 @@
 
 ## 技术
 - Kotlin + Jetpack Compose (Material 3) + Room + SharedPreferences（设置）；单 Activity。
-- 能写单元测试的逻辑（日期格式化、近 7 天筛选、日历标记计算、导出导入）都要写测试。
+- 能写单元测试的逻辑（日期格式化、近 7 天筛选、清单分块（listSections）、日历标记计算、导出导入）都要写测试。
 
 ## 交付
 - 在新分支上工作，分支名“里程碑号-做什么”，例如 m2-room-task。
