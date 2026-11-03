@@ -1,5 +1,7 @@
 package com.leaftodo.app
 
+import com.leaftodo.app.ui.sketch.*
+
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -13,7 +15,7 @@ import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.AlertDialog
+
 import androidx.compose.material3.DatePickerDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.TextButton
@@ -50,7 +52,9 @@ fun CalendarScreen(model: TaskListViewModel, today: LocalDate, selected: LocalDa
         model.selectMonth(it)
         monthPicker = false
     }
-    LazyColumn(contentPadding = PaddingValues(bottom = 120.dp)) {
+    val scroll = androidx.compose.foundation.lazy.rememberLazyListState()
+    PauseBoilWhileScrolling(scroll)
+    LazyColumn(state = scroll, contentPadding = PaddingValues(bottom = 120.dp)) {
         item(key = "month") {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 MonthArrow(previous = true) { model.flipMonth(-1) }
@@ -105,7 +109,7 @@ fun CalendarScreen(model: TaskListViewModel, today: LocalDate, selected: LocalDa
             FlowRow(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 listOf(DayMark.TODAY, DayMark.ALL_CLOSED, DayMark.OPEN_RECENT, DayMark.OPEN_STALE, DayMark.UPCOMING).forEach { mark ->
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                        if (mark == DayMark.TODAY) Box(Modifier.size(12.dp).background(clayTint, RoundedCornerShape(3.dp)))
+                        if (mark == DayMark.TODAY) Box(Modifier.size(14.dp).sketchFill(clayTint,1700))
                         else MarkDot(mark)
                         Text(mark.label(), color = soft, fontSize = 13.sp)
                     }
@@ -138,7 +142,7 @@ private fun CalendarMonthPicker(initial: YearMonth, onDismiss: () -> Unit, onSel
     val years = DatePickerDefaults.YearRange
     var year by rememberSaveable { mutableIntStateOf(initial.year.coerceIn(years)) }
     var month by rememberSaveable { mutableIntStateOf(initial.monthValue) }
-    AlertDialog(onDismissRequest = onDismiss, containerColor = card, tonalElevation = 0.dp,
+    LeafDialog(onDismissRequest = onDismiss, containerColor = card, tonalElevation = 0.dp,
         titleContentColor = ink, textContentColor = ink,
         title = { Text("选择年月") },
         text = {
@@ -157,6 +161,7 @@ private fun CalendarMonthPicker(initial: YearMonth, onDismiss: () -> Unit, onSel
 private fun MonthPickerColumn(label: String, values: IntRange, selected: Int, modifier: Modifier,
     format: (Int) -> String, onSelect: (Int) -> Unit) {
     val state = rememberLazyListState(initialFirstVisibleItemIndex = (selected - values.first - 2).coerceAtLeast(0))
+    PauseBoilWhileScrolling(state)
     Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
         Text(label, color = soft, fontSize = 13.sp)
         Spacer(Modifier.height(8.dp))
@@ -164,8 +169,8 @@ private fun MonthPickerColumn(label: String, values: IntRange, selected: Int, mo
             verticalArrangement = Arrangement.spacedBy(4.dp)) {
             items(values.count(), key = { it + values.first }) { index ->
                 val value = index + values.first
-                Box(Modifier.fillMaxWidth().heightIn(min = 48.dp).clip(RoundedCornerShape(12.dp))
-                    .then(if (selected == value) Modifier.background(clayTint) else Modifier)
+                Box(Modifier.fillMaxWidth().heightIn(min = 48.dp)
+                    .then(if (selected == value) Modifier.sketchFill(clayTint,value) else Modifier)
                     .selectable(selected == value, role = Role.RadioButton, onClick = { onSelect(value) })
                     .padding(vertical = 8.dp), contentAlignment = Alignment.Center) {
                     Text(format(value), color = ink,
@@ -180,43 +185,43 @@ private fun MonthPickerColumn(label: String, values: IntRange, selected: Int, mo
 private fun MonthArrow(previous: Boolean, onClick: () -> Unit) {
     Box(Modifier.size(48.dp).clip(CircleShape).clickable(onClick = onClick)
         .semantics { contentDescription = if (previous) "上个月" else "下个月" }, contentAlignment = Alignment.Center) {
-        Canvas(Modifier.size(10.dp)) {
-            val start = if (previous) size.width else 0f
-            val end = size.width - start
-            drawLine(ink, Offset(start, 0f), Offset(end, size.height / 2), 2.dp.toPx())
-            drawLine(ink, Offset(end, size.height / 2), Offset(start, size.height), 2.dp.toPx())
+        Box(Modifier.size(10.dp,16.dp).sketchDrawing(if(previous) 301 else 302) { _,id ->
+            val start=if(previous) w else 0f; val end=w-start
+            strokes(id,listOf(floatArrayOf(start,0f,end,h/2),floatArrayOf(end,h/2,start,h)),width=2.4f,amp=.24f,over=false)
+        })
+    }
+}
+
+@Composable
+internal fun CalendarDay(date: LocalDate, today: LocalDate, mark: DayMark, selected: Boolean, modifier: Modifier, onClick: () -> Unit) {
+    CompositionProbe("CalendarDay-$date")
+    Box(modifier.height(52.dp)
+        .sketchDrawing(date.toEpochDay().toInt()) { _,id ->
+            if(mark==DayMark.TODAY) rect(w/2-17,3f,34f,h-6,id,clayTint,amp=.48f,fill=true)
+            if(selected) rect(2f,1f,w-4,h-2,id+400,stroke=1.7f,amp=.4f)
         }
+        .clickable(interactionSource=remember { androidx.compose.foundation.interaction.MutableInteractionSource() },indication=null,onClick=onClick)
+        .semantics { contentDescription = formatDate(date,today) + "，" + mark.label() }, contentAlignment=Alignment.Center) {
+        Text(date.dayOfMonth.toString(),
+            color=if(mark==DayMark.OPEN_STALE) soft else ink,
+            style=MaterialTheme.typography.bodyLarge.copy(fontFeatureSettings="tnum"))
+        Box(Modifier.align(Alignment.BottomCenter).padding(bottom=3.dp)) { MarkDot(mark,date.toEpochDay().toInt()) }
     }
 }
 
 @Composable
-private fun CalendarDay(date: LocalDate, today: LocalDate, mark: DayMark, selected: Boolean, modifier: Modifier, onClick: () -> Unit) {
-    val shape = RoundedCornerShape(12.dp)
-    Box(modifier.height(52.dp).clip(shape)
-        .then(if (mark == DayMark.TODAY) Modifier.background(clayTint) else Modifier)
-        .then(if (selected) Modifier.border(1.5.dp, ink, shape) else Modifier)
-        .clickable(onClick = onClick)
-        .semantics { contentDescription = formatDate(date, today) + "，" + mark.label() },
-        contentAlignment = Alignment.Center) {
-        Text(date.dayOfMonth.toString(), color = if (mark == DayMark.OPEN_STALE) soft else ink,
-            style = MaterialTheme.typography.bodyLarge.copy(fontFeatureSettings = "tnum"))
-        // 标记独立放在数字下沿与框底之间，不参与日期数字的居中计算。
-        Box(Modifier.align(Alignment.BottomCenter).padding(bottom = 8.dp).height(8.dp),
-            contentAlignment = Alignment.Center) { MarkDot(mark) }
-    }
-}
-
-@Composable
-private fun MarkDot(mark: DayMark) {
-    Canvas(Modifier.size(6.dp)) {
-        when (mark) {
-            DayMark.ALL_CLOSED -> drawCircle(ink, radius = (size.minDimension - 1.5.dp.toPx()) / 2, style = Stroke(1.5.dp.toPx()))
-            DayMark.OPEN_RECENT -> drawCircle(clay)
-            DayMark.OPEN_STALE -> drawCircle(soft)
-            DayMark.UPCOMING -> drawCircle(ink)
+private fun MarkDot(mark: DayMark, seed: Int = 1701) {
+    Box(Modifier.size(14.dp).sketchDrawing(seed) { _,id ->
+        when(mark) {
+            DayMark.ALL_CLOSED -> {
+                strokes(id,listOf(floatArrayOf(2.5f,7f,5.8f,10.4f),floatArrayOf(5.8f,10.4f,12f,3.4f)),width=1.8f,amp=.25f,over=false)
+            }
+            DayMark.OPEN_RECENT -> circle(7f,7f,3.4f,id,clay,amp=.2f)
+            DayMark.OPEN_STALE -> circle(7f,7f,3.2f,id,soft,amp=.2f)
+            DayMark.UPCOMING -> circle(7f,7f,2.8f,id,ink,1.5f,.2f)
             else -> Unit
         }
-    }
+    })
 }
 
 private fun DayMark.label(): String = when (this) {

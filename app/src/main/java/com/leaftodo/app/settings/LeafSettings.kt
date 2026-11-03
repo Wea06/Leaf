@@ -12,6 +12,11 @@ class LeafSettings private constructor(context: Context) {
     private val enabled = MutableStateFlow(prefs.getBoolean("reviewEnabled", true))
     private val time = MutableStateFlow(parseReviewTime(prefs.getString("reviewTime", null)))
     private val paper = MutableStateFlow(parsePaperEffect(prefs.getString("paperEffect", null)))
+    private val boil = MutableStateFlow(prefs.getBoolean("boilEnabled", true))
+    val boilEnabled = boil.asStateFlow()
+    @Synchronized fun setBoilEnabled(value: Boolean) {
+        if (prefs.edit().putBoolean("boilEnabled", value).commit()) boil.value = value
+    }
     val reviewEnabled = enabled.asStateFlow()
     val reviewTime = time.asStateFlow()
     val paperEffect = paper.asStateFlow()

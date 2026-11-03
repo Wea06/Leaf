@@ -1,5 +1,7 @@
 package com.leaftodo.app
 
+import com.leaftodo.app.ui.sketch.*
+
 import android.os.Build
 import android.os.PowerManager
 import androidx.compose.foundation.layout.*
@@ -63,9 +65,7 @@ internal fun ReminderSettingsBlock() {
         SettingsButton("自启动和后台活动（${guide.vendor}）", "Leaf 检查不到这一项，请自己确认一次：${guide.steps}", true) { openAutoStartSettings(context) }
         SettingsButton("更准时", "打开后用闹钟的方式登记，最不容易被推迟；有待提醒的事时，状态栏会显示一个小闹钟图标", true,
             trailing = {
-                Switch(checked = precise, onCheckedChange = null, colors = SwitchDefaults.colors(
-                    checkedThumbColor = card, checkedTrackColor = clay, checkedBorderColor = clay,
-                    uncheckedThumbColor = card, uncheckedTrackColor = rule, uncheckedBorderColor = rule))
+                SketchSwitch(checked = precise)
             }) {
             precise = !precise
             ReminderStore(context).preciseMode = precise
