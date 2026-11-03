@@ -1,6 +1,9 @@
 package com.leaftodo.app
 
+import com.leaftodo.app.ui.sketch.*
+
 import androidx.compose.foundation.*
+import androidx.compose.foundation.interaction.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
@@ -30,17 +33,21 @@ fun TaskList(
     onToggle: (Task) -> Unit, onDrop: (Task) -> Unit,
     onReopen: (Task) -> Unit, onEdit: (Task) -> Unit,
 ) {
-    LazyColumn(contentPadding = PaddingValues(bottom = 120.dp)) {
+    val scroll = androidx.compose.foundation.lazy.rememberLazyListState()
+    PauseBoilWhileScrolling(scroll)
+    LazyColumn(state = scroll, contentPadding = PaddingValues(bottom = 120.dp)) {
         if (groups.open.isEmpty() && groups.closed.isEmpty()) item(key = "empty") { Text(emptyText, color = soft) }
         taskCards(groups.open, today, showCreatedDate, onToggle, onDrop, onReopen, onEdit)
         if (groups.closed.isNotEmpty()) {
             item(key = "closed-fold") {
+                val foldSource = remember { MutableInteractionSource() }
+                val foldPressed by foldSource.collectIsPressedAsState()
                 if (groups.open.isNotEmpty()) Spacer(Modifier.height(20.dp))
                 Text(
                     "已结束 ${groups.closed.size} 条 · ${if (expanded) "收起" else "展开"}",
-                    color = soft, fontSize = 13.sp,
+                    color = if(foldPressed) clayText else soft, fontSize = 13.sp,
                     modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
-                        .clip(RoundedCornerShape(12.dp)).clickable { onExpandedChange(!expanded) }
+                        .clickable(interactionSource=foldSource,indication=null) { onExpandedChange(!expanded) }
                         .padding(vertical = 14.dp),
                 )
             }
@@ -77,24 +84,26 @@ internal fun LazyListScope.taskCards(
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 internal fun TaskCard(task: Task, today: LocalDate, showCreatedDate: Boolean, onToggle: (Task) -> Unit, onDrop: (Task) -> Unit, onReopen: (Task) -> Unit, onEdit: (Task) -> Unit, dimmed: Boolean = false) {
+    CompositionProbe("TaskCard-${task.id}")
     var menu by remember { mutableStateOf(false) }
+    val actions = LocalDrawingActions.current
+    val animations = LocalDrawingAnimations.current
+    val final = remember { mutableStateOf(1f) }
+    val progress = actions?.progress(task.id,task.status) ?: final
+    fun toggle() { actions?.start(task.id, if(task.status==TaskStatus.OPEN) TaskStatus.DONE else TaskStatus.OPEN,animations); onToggle(task) }
+    fun drop() { actions?.start(task.id,TaskStatus.DROPPED,animations); onDrop(task) }
+    val source = remember { MutableInteractionSource() }
+    val pressed by source.collectIsPressedAsState()
     Box {
         Row(Modifier.fillMaxWidth().heightIn(min = 60.dp)
-            .clip(RoundedCornerShape(16.dp)).background(card)
-            .combinedClickable(onClick = { onEdit(task) }, onLongClick = { menu = true })
-            .padding(horizontal = 18.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-            Box(Modifier.size(22.dp)
-                .clip(RoundedCornerShape(4.dp))
-                .background(if (task.status == TaskStatus.DONE) clay else card, RoundedCornerShape(4.dp))
-                .border(2.dp, ink, RoundedCornerShape(4.dp))
-                .clickable(onClickLabel = "完成或撤回") { onToggle(task) }, contentAlignment = Alignment.Center) {
-                Text(when(task.status) { TaskStatus.OPEN -> ""; TaskStatus.DONE -> "✓"; TaskStatus.DROPPED -> "—" }, color = ink)
-            }
-            Spacer(Modifier.width(20.dp))
+            .sketchCard(fill=if(pressed) clayTint else card,seed=task.id.toInt())
+            .combinedClickable(interactionSource=source, indication=null, onClick = { onEdit(task) }, onLongClick = { menu = true })
+            .padding(start = 4.dp, end = 18.dp, top = 6.dp, bottom = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+            SketchCheckbox(task.status,task.time!=null,task.id.toInt(),progress) { toggle() }
+            Spacer(Modifier.width(6.dp))
             Column(Modifier.weight(1f)) {
-                Text(task.title, color = if (task.status == TaskStatus.OPEN && !dimmed) ink else soft,
-                    textDecoration = if (task.status == TaskStatus.DROPPED) TextDecoration.LineThrough else null,
-                    style = MaterialTheme.typography.bodyLarge)
+                SketchStrike(task.title, if(task.status==TaskStatus.OPEN && !dimmed) ink else soft,
+                    task.status==TaskStatus.DROPPED,task.id.toInt()+90,progress)
                 if (showCreatedDate || task.time != null || task.note.isNotEmpty()) {
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                         if (showCreatedDate) Text("记于 " + formatDate(task.createdDate(ZoneId.systemDefault()), today),
@@ -107,10 +116,10 @@ internal fun TaskCard(task: Task, today: LocalDate, showCreatedDate: Boolean, on
                 }
             }
         }
-        DropdownMenu(expanded = menu, onDismissRequest = { menu = false }, containerColor = card) {
+        DropdownMenu(expanded = menu, onDismissRequest = { menu = false }, containerColor = card, shadowElevation = 0.dp, tonalElevation = 0.dp, border = BorderStroke(1.5.dp,ink)) {
             if (task.status == TaskStatus.OPEN) {
-                DropdownMenuItem(text = { Text("完成", color = ink) }, onClick = { onToggle(task); menu = false })
-                DropdownMenuItem(text = { Text("划掉（不做了）", color = ink) }, onClick = { onDrop(task); menu = false })
+                DropdownMenuItem(text = { Text("完成", color = ink) }, onClick = { toggle(); menu = false })
+                DropdownMenuItem(text = { Text("划掉（不做了）", color = ink) }, onClick = { drop(); menu = false })
             } else DropdownMenuItem(text = { Text("撤回成待办", color = ink) }, onClick = { onReopen(task); menu = false })
         }
     }

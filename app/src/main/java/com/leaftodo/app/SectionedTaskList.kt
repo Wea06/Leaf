@@ -1,5 +1,7 @@
 package com.leaftodo.app
 
+import com.leaftodo.app.ui.sketch.*
+
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -7,6 +9,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -30,7 +33,9 @@ fun SectionedTaskList(
     onToggle: (Task) -> Unit, onDrop: (Task) -> Unit,
     onReopen: (Task) -> Unit, onEdit: (Task) -> Unit,
 ) {
-    LazyColumn(contentPadding = PaddingValues(bottom = 120.dp)) {
+    val scroll = androidx.compose.foundation.lazy.rememberLazyListState()
+    PauseBoilWhileScrolling(scroll)
+    LazyColumn(state = scroll, contentPadding = PaddingValues(bottom = 120.dp)) {
         var hasBlock = false
         fun header(key: String, title: String, expanded: Boolean, change: (Boolean) -> Unit, small: Boolean = false) {
             val gap = hasBlock
@@ -88,13 +93,15 @@ fun SectionedTaskList(
 
 @Composable
 private fun SectionHeader(title: String, expanded: Boolean, onClick: () -> Unit, small: Boolean = false) {
-    Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).clip(RoundedCornerShape(12.dp))
-        .clickable(onClick = onClick).padding(vertical = 14.dp),
+    val interaction = androidx.compose.runtime.remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+    val pressed = interaction.collectIsPressedAsState().value
+    Row(Modifier.fillMaxWidth().heightIn(min = 48.dp)
+        .clickable(interactionSource=interaction,indication=null,onClick=onClick).padding(vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically) {
         if (small) {
-            Text("$title · ${if (expanded) "收起" else "展开"}", color = soft, fontSize = 13.sp)
+            Text("$title · ${if (expanded) "收起" else "展开"}", color = if(pressed) com.leaftodo.app.ui.theme.clayText else soft, fontSize = 13.sp)
         } else {
-            Text(title, Modifier.weight(1f), style = MaterialTheme.typography.titleMedium, color = ink)
+            Text(title, Modifier.weight(1f), style = MaterialTheme.typography.titleMedium, color = if(pressed) com.leaftodo.app.ui.theme.clayText else ink)
             Spacer(Modifier.width(8.dp))
             Text(if (expanded) "收起" else "展开", color = soft, fontSize = 13.sp)
         }

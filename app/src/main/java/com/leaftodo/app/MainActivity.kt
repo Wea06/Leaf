@@ -1,5 +1,7 @@
 package com.leaftodo.app
 
+import com.leaftodo.app.ui.sketch.*
+
 import android.os.Bundle
 import android.os.Build
 import android.content.Intent
@@ -84,9 +86,13 @@ class MainActivity : ComponentActivity() {
         window.isNavigationBarContrastEnforced = false
         setContent { LeafTheme { Surface(color = bg, contentColor = ink) {
             val effect by LeafSettings.get(this).paperEffect.collectAsState()
-            Box(Modifier.fillMaxSize()) {
-                LeafApp(openTodayRequests)
-                PaperOverlay(effect)
+            val boil by LeafSettings.get(this).boilEnabled.collectAsState()
+            BoilClock(boil) {
+                Box(Modifier.fillMaxSize()) {
+                    LeafApp(openTodayRequests)
+                    StaticFrame(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.systemBars.union(WindowInsets.displayCutout)).padding(12.dp))
+                    PaperOverlay(effect)
+                }
             }
         } } }
     }
@@ -164,32 +170,32 @@ private fun LeafApp(openTodayRequests: Int) {
                 }
                 if (selected == 2) {
                     Spacer(Modifier.height(20.dp))
-                    CalendarScreen(model, today, calendarSelected,
-                        onEdit = { dismissSnackbar(); editingId = it.id; editing = true })
+                    DrawingPage { CalendarScreen(model, today, calendarSelected,
+                        onEdit = { dismissSnackbar(); editingId = it.id; editing = true }) }
                 }
                 if (selected == 1) {
                     Spacer(Modifier.height(20.dp))
-                    SectionedTaskList(sections, today,
+                    DrawingPage { SectionedTaskList(sections, today,
                         futureExpanded, { futureExpanded = it }, noDateExpanded, { noDateExpanded = it },
                         overdueExpanded, { overdueExpanded = it }, olderExpanded, { olderExpanded = it },
                         listExpanded, { listExpanded = it },
                         onOverdueToggle = { recentClosed(it, false) }, onOverdueDrop = { recentClosed(it, true) },
                         onToggle = model::toggleDone, onDrop = model::drop, onReopen = model::reopen,
-                        onEdit = { dismissSnackbar(); editingId = it.id; editing = true })
+                        onEdit = { dismissSnackbar(); editingId = it.id; editing = true }) }
                 }
                 if (selected == 0) {
                     Spacer(Modifier.height(20.dp))
                     Text(formatDate(today, today), style = MaterialTheme.typography.bodyLarge)
                     Spacer(Modifier.height(20.dp))
-                    TaskList(splitToday(todayTasks), "今天还没有事，点右下角 ＋ 记一条", today,
+                    DrawingPage { TaskList(splitToday(todayTasks), "今天还没有事，点右下角 ＋ 记一条", today,
                         expanded = todayExpanded, onExpandedChange = { todayExpanded = it },
                         recent = recentUnfinished(recentTasks, today),
                         onRecentToggle = { recentClosed(it, false) }, onRecentDrop = { recentClosed(it, true) },
                         onToggle = model::toggleDone, onDrop = model::drop, onReopen = model::reopen,
-                        onEdit = { dismissSnackbar(); editingId = it.id; editing = true })
+                        onEdit = { dismissSnackbar(); editingId = it.id; editing = true }) }
                 }
             }
-            FloatingActionButton(
+            SketchFab(
                 onClick = {
                     dismissSnackbar()
                     editingId = null
@@ -197,21 +203,13 @@ private fun LeafApp(openTodayRequests: Int) {
                     editing = true
                 },
                 modifier = Modifier.align(Alignment.BottomEnd).padding(end = 42.dp, bottom = 42.dp)
-                    .size(56.dp).semantics { contentDescription = "新建一条事" },
-                shape = CircleShape,
-                containerColor = clay, contentColor = ink,
-                elevation = FloatingActionButtonDefaults.elevation(0.dp, 0.dp, 0.dp, 0.dp),
-            ) {
-                Text("+", style = MaterialTheme.typography.headlineLarge)
-            }
+                    .size(56.dp).semantics { contentDescription = "新建一条事" }
+            )
             SnackbarHost(snackbarHost, Modifier.align(Alignment.BottomCenter)
                 .padding(start = 34.dp, end = 34.dp, bottom = 114.dp)) { data ->
-                Snackbar(shape = RoundedCornerShape(16.dp), containerColor = ink, contentColor = card,
-                    action = {
-                        TextButton(onClick = { data.performAction() },
-                            colors = ButtonDefaults.textButtonColors(contentColor = clay)) { Text("撤回") }
-                    }) {
-                    Text(data.visuals.message, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Row(Modifier.fillMaxWidth().sketchFill(ink,812).padding(horizontal=16.dp),verticalAlignment=Alignment.CenterVertically) {
+                    Text(data.visuals.message,color=card,maxLines=1,overflow=TextOverflow.Ellipsis,modifier=Modifier.weight(1f))
+                    TextButton(onClick={data.performAction()}) { Text("撤回",color=clay) }
                 }
             }
         }
@@ -222,8 +220,7 @@ private fun LeafApp(openTodayRequests: Int) {
             pages.forEachIndexed { index, label ->
                 Box(
                     Modifier.weight(1f).heightIn(min = 48.dp)
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(if (selected == index) clayTint else Color.Transparent, RoundedCornerShape(16.dp))
+                        .then(if (selected == index) Modifier.sketchFill(clayTint,2000) else Modifier)
                         .selectable(selected == index, role = Role.Tab, onClick = { dismissSnackbar(); selected = index })
                         .padding(horizontal = 8.dp, vertical = 12.dp),
                     contentAlignment = Alignment.Center,
