@@ -11,7 +11,7 @@
 
 原则：
 1. **两种笔触各司其职**：墨线负责“画东西”（图标、勾号、手、物体轮廓）；平涂色块负责“垫底”（卡片、高亮、按钮底）。卡片 = 色块 + 墨线描边，二者错位 3dp（用户选定）。
-2. **不用阴影、渐变、毛玻璃、排线**。画面是平的。
+2. **不用阴影、渐变、毛玻璃、排线**。画面是平的。唯一例外：卡片沉下去再浮上来的那半秒里，卡片右下方有一块平涂错位阴影（墨黑 50% 透明度、在墨线描边外再露出 8dp、不模糊），停下就消失（用户 2026-11-02 选定，见 5.3；M9-2 实现）。
 3. **克制**：正文文字不抖；强调色（橙）一屏 1–2 处。
 4. **安静**：抖动幅度小、帧率低，看久了不晕。
 
@@ -50,11 +50,11 @@
 
 ### 3.2 平涂色块
 - 纯色，无描边，无阴影，边缘轻微不规整（和线条用同样的扰动，幅度 0.8 倍）。
-- **错位**：一个元素同时有色块和墨线时（例如悬浮按钮：橙色圆 + 黑色圆圈），色块向左上、墨线向右下各偏 3dp。
+- **错位**：色块和墨线一共错开 3dp：卡片是色块不动、墨线向右下 3dp；悬浮按钮是色块向左上、墨线向右下各 1.5dp（用户 2026-11-02 觉得各 3dp 太偏）。
 - 色块边缘也一起抖动。
 
 ### 3.3 静止画框
-主参考视频的标志：整个画面四周有一圈手绘墨线画框，**这圈框不抖**。App 里每个页面内容区四周也画一圈，内缩 14dp，线宽约 2.6dp，用第 0 帧固定形状。
+主参考视频的标志：整个画面四周有一圈手绘墨线画框，**这圈框不抖**。App 里每个页面内容区四周也画一圈，按 systemBars / displayCutout 留出系统区域后内缩 12dp（不跟随 IME），线宽约 2.7dp，用第 0 帧固定形状。
 
 ### 3.4 纸纤维纹理（v4，用户定稿）
 历史：颗粒/斑驳版被否（像抹灰）；长弯纤维版“像头发丝”；v3 短直纤维用户称“非常完美”，只是把同向改为随机。v4 规则：
@@ -116,10 +116,12 @@
 - **全部按 12fps 或 8fps 跳帧播放**，不用 60fps 平滑插值；这比抖动本身更决定“手翻书感”。
 
 ### 5.3 交互动效
-- **打勾**：先“啪”地出现橙色块（1 帧），勾号沿路径画出，220ms。
-- **划掉已完成事项**：淡墨线从左画到右，260ms。
-- **页面切换**：淡入淡出，按 12fps 跳帧，保持手绘感。
-- **删除**：条目色块碎成小点散开消失（见 5.2“散开”），约 4–5 帧。
+- **打勾**：橙色块按 0.6 → 1.15 → 1 弹出，勾号沿两笔路径画出，共 330ms，12fps 跳帧。
+- **划掉**：方框短横和标题淡墨线从左画到右，共 330ms，12fps 跳帧；撤回直接消失。只播放本页用户操作触发的变化，系统关闭动画时直接显示最终状态。
+- **页面切换**：左右滑动 0.3 秒，平滑（用户 2026-11-02 定），见 M9-2。
+- **翻月**：左右滑动 0.3 秒，见 M9-2。
+- **打勾/划掉后卡片换位置**：沉下去 → 从未结束卡片底下滑过 → 浮上来，0.7 秒，见 M9-2。M9-1 保持瞬间换位。
+- **删除**：条目色块碎成小点散开消失（见 5.2“散开”），约 4–5 帧；M9 未做。
 
 ### 5.4 什么不抖
 视频实测：**标题文字、页脚小字、四周画框完全不动**，只有插画图形在抖。App 里同理：所有文字、静止画框、滚动中的列表都不抖。
@@ -149,49 +151,18 @@ fun BoilClock(enabled: Boolean, content: @Composable () -> Unit) {
 }
 ```
 
-### 6.2 把规整的形状“画歪”
-用 `PathMeasure` 每隔 12dp 取一个点，沿法线方向加随机偏移，再用 `quadraticTo` 平滑连接。每帧用不同随机种子（seed = 元素 id × 常数 + 帧号），得到 3 个略有差别的版本。
+### 6.2 演示算法移植（M9-1）
+实际实现以 docs/demo/boil-demo.html 和 docs/demo/m9-demo.html 定稿为准：
+- data/RoughLogic.kt 的 mulberry32 保留 Int 溢出和无符号右移；roughPoints、roughCirclePoints 使用演示的点数、法向扰动和端点出头参数。
+- 墨线种子为 id × 977 + frame × 131；第二笔用 seed + 55 的路径，用 seed + 9 的随机数在 ±0.6dp 内平移，线宽为主笔的 0.75 倍。一个图形的后续笔画用 seed + 1，不重新乘常数。
+- 平涂种子为 id × 733 + frame × 97，四边端点固定相接并封闭，幅度为基础值的 0.8 倍。
+- trace 用 quadraticTo 连接相邻两点的中点；圆按演示逐点连线，开放圆略有重叠。
 
-```kotlin
-fun roughen(src: Path, seed: Int, amplitudePx: Float, stepPx: Float): Path {
-    val measure = PathMeasure().apply { setPath(src, false) }
-    val out = Path()
-    val rnd = java.util.Random(seed * 7919L)
-    var d = 0f
-    while (d <= measure.length) {
-        val p = measure.getPosition(d)
-        val t = measure.getTangent(d)
-        val off = (rnd.nextFloat() * 2 - 1) * amplitudePx
-        val x = p.x - t.y * off   // 沿法线偏移
-        val y = p.y + t.x * off
-        if (d == 0f) out.moveTo(x, y) else out.lineTo(x, y)
-        d += stepPx
-    }
-    return out
-}
-```
-
-### 6.3 缓存 + 两种画法
-```kotlin
-// 平涂色块（卡片）：填充，不描边
-fun Modifier.sketchFill(color: Color) = composed {
-    val frame = LocalBoilFrame.current
-    var cache by remember { mutableStateOf<Pair<Size, List<Path>>?>(null) }
-    drawBehind {
-        if (cache?.first != size) cache = size to List(3) { buildRoughRect(size, seed = it, closed = true) }
-        drawPath(cache!!.second[frame.value], color)          // style 默认 Fill
-    }
-}
-
-// 墨线：主笔 + 0.75 倍粗细、错开 0.6dp 的第二笔，都不透明
-fun DrawScope.inkStroke(path: Path, alt: Path, color: Color, width: Float) {
-    drawPath(path, color, style = Stroke(width, cap = StrokeCap.Round, join = StrokeJoin.Round))
-    translate(0.6.dp.toPx(), 0.4.dp.toPx()) {
-        drawPath(alt, color, style = Stroke(width * 0.75f, cap = StrokeCap.Round))
-    }
-}
-```
-组件：`SketchCard`（sketchFill）、`SketchCheckbox`（墨线框 + 完成时橙色色块错位）、`SketchFab`（橙色圆色块 + 墨线圆 + 墨线加号，错位 3dp）、`SketchDivider`、`SketchIcon`（线条图标 SVG 路径 → roughen → inkStroke）。
+### 6.3 缓存与组件
+- ui/sketch/Sketch.kt 在 Modifier.drawWithCache 中按 size 预计算三帧 Path；绘制阶段按 LocalBoilFrame.value 选帧。静止画框只缓存第 0 帧，也不读取帧号。
+- 画出来的动画也预存跳帧路径，进度只在 onDrawBehind 读取，不随时钟重组或每帧重建路径。
+- DrawingPage 保存本页操作进度，切页/进入编辑页即销毁；开始滚动立即显示最终状态。卡片瞬间换到另一个分块时，本页进度仍可继续。
+- 组件：SketchCard、SketchCheckbox、SketchFab、StaticFrame、SketchButton、SketchSwitch、SketchDivider、SketchStrike、LeafDialog。日期和时间选择器在手绘弹窗内按可用宽度完整适配。
 
 ## 7. 性能与耗电
 
@@ -203,7 +174,8 @@ fun DrawScope.inkStroke(path: Path, alt: Path, color: Color, width: Float) {
 | 后台停止 | `repeatOnLifecycle(RESUMED)` |
 | 滚动暂停 | `LazyListState.isScrollInProgress` 为真时停 |
 | 省电模式 / 系统关闭动画 | 自动静止 |
-| 设置开关 | “线条抖动：开 / 关”，关掉显示第 0 帧，手绘感仍在 |
+| 静止条件 | 省电模式、系统关闭动画、App 在后台、列表滚动中：抖动停在第 0 帧（已实现） |
+| 设置开关 | 设置 → 外观 → 线条抖动；默认开，关掉显示第 0 帧（已实现） |
 
 验收（真机）：开启抖动后列表滚动不卡；放置 10 分钟，耗电与关闭抖动时没有明显差别。
 
@@ -220,6 +192,7 @@ fun DrawScope.inkStroke(path: Path, alt: Path, color: Color, width: Float) {
 | 输入框 | 象牙白色块，或一根墨线下划线 |
 | 分割线 | 尽量用留白代替；需要时一根 1.5dp 淡墨线 |
 | 图标 | 3.4dp 墨线图标，可从 Lucide 取 SVG 再 roughen |
+| 日历标记（M9 定，方案 A） | 今天：数字后 34×(格高−6)dp 浅橙色块，不叠其他记号；选中：1.7dp 墨线框、幅度 0.4dp；都结束：数字下约 10dp 墨线小勾、线宽 1.8dp；7 天内没做完：clay 实心点、半径 3.4dp；超过 7 天：soft 点、半径 3.2dp，数字 soft；以后：墨线小圈、半径 2.8dp、线宽 1.5dp；无事不画。图例复用同样记号，今天用 14dp 色块，13sp soft 文字，自动换行 |
 | 空状态插画 | 参考图那种：一两个平涂色块 + 一个墨线小物件（铅笔、纸、手），会抖 |
 
 ## 8.1 间距（要宽松）
