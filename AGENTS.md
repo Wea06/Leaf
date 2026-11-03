@@ -29,4 +29,6 @@
 - 在新分支上工作，分支名“里程碑号-做什么”，例如 m2-room-task。
 - 小步 commit，信息格式 feat:/fix:/docs:/refactor: + 中文说明。
 - 结束前必须跑 ./gradlew assembleDebug testDebugUnitTest 并通过。
+- 开发说明、构建方法、验收记录写进 docs/DEVLOG.md（在末尾加一节），不要写进 README.md。README.md 是给仓库访客看的介绍，只有功能、安装方式变了才改。
+- 仓库是公开的：任何文件里都不要写本机路径（如 E:\、F:\ 开头的目录）、密码、keystore 信息。
 - 最后用中文告诉用户：做了什么、改了哪些文件、**在手机上怎么验收（一步一步）**、有什么没做或不确定。

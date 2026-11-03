@@ -37,8 +37,8 @@
 本机 JDK socket 默认临时目录导致构建连接失败，执行时使用环境变量解决，没有修改工程配置或升级工具链：
 
 ```powershell
-$env:JAVA_HOME='E:\Software\AndroidStudio\jbr'
-$env:JAVA_TOOL_OPTIONS='-Djdk.net.unixdomain.tmpdir=F:\Projects\AndroidProjects\Leaf\build'
+$env:JAVA_HOME='<Android Studio 安装目录>\jbr'
+$env:JAVA_TOOL_OPTIONS='-Djdk.net.unixdomain.tmpdir=<仓库目录>\build'
 ./gradlew.bat assembleDebug testDebugUnitTest assembleRelease assembleDebugAndroidTest
 ```
 
